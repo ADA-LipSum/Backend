@@ -1,25 +1,29 @@
 package com.ada.proj.service;
 
-import com.ada.proj.dto.*;
-import com.ada.proj.entity.PostLike;
-import com.ada.proj.repository.PostLikeRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.ada.proj.dto.PageResponse;
+import com.ada.proj.dto.PostCreateRequest;
+import com.ada.proj.dto.PostDetailResponse;
+import com.ada.proj.dto.PostSummaryResponse;
+import com.ada.proj.dto.PostUpdateRequest;
 import com.ada.proj.entity.Post;
+import com.ada.proj.entity.PostLike;
 import com.ada.proj.entity.User;
+import com.ada.proj.repository.PostLikeRepository;
 import com.ada.proj.repository.PostRepository;
 import com.ada.proj.repository.UserRepository;
 
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.access.AccessDeniedException;
 
 @Service
 @RequiredArgsConstructor
@@ -84,25 +88,15 @@ public class PostService {
 
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "writedAt"));
 
-        Page<PostSummaryResponse> result =
-                postRepository.findAllByOrderByWritedAtDesc(pageable)
-                        .map(p -> {
-                            User u = userRepository.findByUuid(p.getWriterUuid()).orElse(null);
-                            return PostSummaryResponse.builder()
-                                    .postUuid(p.getPostUuid())
-                                    .seq(p.getSeq())
-                                    .title(p.getTitle())
-                                    .writer(p.getWriter())
-                                    .writerProfileImage(u != null ? u.getProfileImage() : null)
-                                    .writedAt(p.getWritedAt())
-                                    .likes(p.getLikes())
-                                    .views(p.getViews())
-                                    .comments(p.getComments())
-                                    .isDev(p.getIsDev())
-                                    .devTags(p.getDevTags())
-                                    .tag(formatTag(p))
-                                    .build();
-                        });
+        Page<PostSummaryResponse> result = postRepository.findSummaryPage(pageable)
+            .map(dto -> {
+                // tag 계산
+                String tag = (Boolean.TRUE.equals(dto.getIsDev()))
+                    ? (dto.getDevTags() != null && !dto.getDevTags().isBlank() ? "개발(" + dto.getDevTags() + ")" : "개발")
+                    : "일반";
+                dto.setTag(tag);
+                return dto;
+            });
 
         return new PageResponse<>(
                 result.getNumber(),

@@ -11,6 +11,8 @@ import com.ada.proj.entity.Post;
 public interface CommentRepository extends JpaRepository<Comment, Long> {
     @EntityGraph(attributePaths = {"children", "author"})
     List<Comment> findByPostAndParentIsNullOrderByCreatedAtAsc(Post post);
+    @EntityGraph(attributePaths = {"author"})
+    List<Comment> findByPostOrderByCreatedAtAsc(Post post);
     
     List<Comment> findByParentOrderByCreatedAtAsc(Comment parent);
     long countByPost(Post post);

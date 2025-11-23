@@ -13,6 +13,9 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Caching;
+import org.springframework.cache.annotation.Cacheable;
 
 import com.ada.proj.dto.CreateCustomLoginRequest;
 import com.ada.proj.dto.CreateUserRequest;
@@ -60,6 +63,7 @@ public class UserService {
         return userRepository.search(role, query);
     }
 
+    @Cacheable(cacheNames = "users", key = "#uuid")
     public UserProfileResponse getUserProfile(String uuid) {
         User user = userRepository.findByUuid(uuid)
             .orElseThrow(() -> new UserNotFoundException("User not found"));
@@ -101,12 +105,14 @@ public class UserService {
         user.setRole(role);
     }
 
+    @CacheEvict(cacheNames = "users", key = "#uuid")
     public void toggleUseNickname(String uuid) {
         User user = userRepository.findByUuid(uuid)
             .orElseThrow(() -> new UserNotFoundException("User not found"));
         user.setUseNickname(!user.isUseNickname());
     }
 
+    @CacheEvict(cacheNames = "users", key = "#uuid")
     public void updateProfile(String uuid, UpdateProfileRequest req) {
         User user = userRepository.findByUuid(uuid)
             .orElseThrow(() -> new UserNotFoundException("User not found"));
@@ -140,28 +146,92 @@ public class UserService {
     /**
      * 프로필 이미지 업로드 + DB 저장 (서버 저장 → URL 반환 → DB 저장 일괄 처리)
      */
+    @CacheEvict(cacheNames = "users", key = "#uuid")
     public UserProfileResponse uploadProfileImage(String uuid, MultipartFile file, Authentication auth) throws IOException {
         ensureSelfOrAdmin(auth, uuid);
         User user = userRepository.findByUuid(uuid)
             .orElseThrow(() -> new UserNotFoundException("User not found"));
         StoredFile saved = fileStorageService.storeImage(file);
         user.setProfileImage(saved.url());
-        return getUserProfile(uuid);
+        Optional<UserData> userDataOpt = userDataRepository.findByUuid(uuid);
+        UserData ud = userDataOpt.orElse(null);
+
+        List<String> techList = null;
+        if (ud != null && ud.getTechStack() != null) {
+            techList = parseTechStack(ud.getTechStack());
+        }
+
+        ProfileLinksRequest links = null;
+        if (ud != null && ud.getLinks() != null) {
+            links = parseLinks(ud.getLinks());
+        }
+
+        return UserProfileResponse.builder()
+                .uuid(user.getUuid())
+                .adminId(user.getAdminId())
+                .customId(user.getCustomId())
+                .userRealname(user.getUserRealname())
+                .userNickname(user.getUserNickname())
+                .useNickname(user.isUseNickname())
+                .profileImage(user.getProfileImage())
+                .profileBanner(user.getProfileBanner())
+                .role(user.getRole())
+                .intro(ud == null ? null : ud.getIntro())
+                .techStack(techList)
+                .links(links)
+                .badge(ud == null ? null : ud.getBadge())
+                .activityScore(ud == null ? null : ud.getActivityScore())
+                .contributionData(ud == null ? null : ud.getContributionData())
+                .build();
     }
 
     /**
      * 프로필 배너 업로드 + DB 저장 (서버 저장 → URL 반환 → DB 저장 일괄 처리)
      */
+    @CacheEvict(cacheNames = "users", key = "#uuid")
     public UserProfileResponse uploadProfileBanner(String uuid, MultipartFile file, Authentication auth) throws IOException {
         ensureSelfOrAdmin(auth, uuid);
         User user = userRepository.findByUuid(uuid)
             .orElseThrow(() -> new UserNotFoundException("User not found"));
         StoredFile saved = fileStorageService.storeImage(file);
         user.setProfileBanner(saved.url());
-        return getUserProfile(uuid);
+        Optional<UserData> userDataOpt = userDataRepository.findByUuid(uuid);
+        UserData ud = userDataOpt.orElse(null);
+
+        List<String> techList = null;
+        if (ud != null && ud.getTechStack() != null) {
+            techList = parseTechStack(ud.getTechStack());
+        }
+
+        ProfileLinksRequest links = null;
+        if (ud != null && ud.getLinks() != null) {
+            links = parseLinks(ud.getLinks());
+        }
+
+        return UserProfileResponse.builder()
+                .uuid(user.getUuid())
+                .adminId(user.getAdminId())
+                .customId(user.getCustomId())
+                .userRealname(user.getUserRealname())
+                .userNickname(user.getUserNickname())
+                .useNickname(user.isUseNickname())
+                .profileImage(user.getProfileImage())
+                .profileBanner(user.getProfileBanner())
+                .role(user.getRole())
+                .intro(ud == null ? null : ud.getIntro())
+                .techStack(techList)
+                .links(links)
+                .badge(ud == null ? null : ud.getBadge())
+                .activityScore(ud == null ? null : ud.getActivityScore())
+                .contributionData(ud == null ? null : ud.getContributionData())
+                .build();
     }
 
-    public void createCustomLogin(String uuid, CreateCustomLoginRequest req, Authentication auth) {
+        @Caching(evict = {
+            @CacheEvict(cacheNames = "users", key = "#uuid"),
+            @CacheEvict(cacheNames = "users", key = "'custom:' + #req.customId")
+        })
+        public void createCustomLogin(String uuid, CreateCustomLoginRequest req, Authentication auth) {
         User user = userRepository.findByUuid(uuid)
             .orElseThrow(() -> new UserNotFoundException("User not found"));
         // 자신 또는 관리자만 허용
@@ -176,7 +246,12 @@ public class UserService {
         user.setPassword(passwordEncoder.encode(req.getPassword()));
     }
 
-    public User createUserByAdmin(CreateUserRequest req, Authentication auth) {
+        @Caching(evict = {
+            @CacheEvict(cacheNames = "users", key = "#result.uuid", condition = "#result != null"),
+            @CacheEvict(cacheNames = "users", key = "'admin:' + #req.adminId"),
+            @CacheEvict(cacheNames = "users", key = "'custom:' + #req.customId", condition = "#req.customId != null")
+        })
+        public User createUserByAdmin(CreateUserRequest req, Authentication auth) {
         ensureAdmin(auth);
 
         if (userRepository.findByAdminId(req.getAdminId()).isPresent()) {
@@ -216,7 +291,12 @@ public class UserService {
      * Create the very first ADMIN account when none exists. This can be called without authentication
      * but will fail if any ADMIN already exists.
      */
-    public User createInitialAdmin(CreateUserRequest req) {
+        @Caching(evict = {
+            @CacheEvict(cacheNames = "users", key = "#result.uuid", condition = "#result != null"),
+            @CacheEvict(cacheNames = "users", key = "'admin:' + #req.adminId"),
+            @CacheEvict(cacheNames = "users", key = "'custom:' + #req.customId", condition = "#req.customId != null")
+        })
+        public User createInitialAdmin(CreateUserRequest req) {
         // if any ADMIN exists, disallow unauthenticated init
         if (userRepository.existsByRole(Role.ADMIN)) {
             throw new ForbiddenException("Admin already exists");
@@ -257,6 +337,7 @@ public class UserService {
         if (!isAdmin) throw new ForbiddenException("Forbidden");
     }
 
+    @CacheEvict(cacheNames = "users", key = "#uuid")
     public void changeCustomPassword(String uuid, UpdatePasswordRequest req, Authentication auth) {
         User user = userRepository.findByUuid(uuid)
                 .orElseThrow(() -> new UserNotFoundException("User not found"));

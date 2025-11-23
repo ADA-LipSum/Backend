@@ -17,6 +17,11 @@ public interface PostRepository extends JpaRepository<Post, String> {
     // 목록: 작성시간 최신순
     Page<Post> findAllByOrderByWritedAtDesc(Pageable pageable);
 
+        // 게시글 목록 + 작성자 프로필이미지(Writer UUID로 User 조인) — 프로젝션으로 N+1 방지
+        @Query("select new com.ada.proj.dto.PostSummaryResponse(p.postUuid, p.seq, p.title, p.writer, u.profileImage, p.writedAt, p.likes, p.views, p.comments, p.isDev, p.devTags, null) " +
+          "from Post p left join com.ada.proj.entity.User u on u.uuid = p.writerUuid")
+        Page<com.ada.proj.dto.PostSummaryResponse> findSummaryPage(Pageable pageable);
+
     // 조회수 +1
     @Modifying
     @Query("update Post p set p.views = p.views + 1 where p.postUuid = :uuid")

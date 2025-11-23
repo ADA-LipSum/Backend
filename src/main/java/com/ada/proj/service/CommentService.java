@@ -98,11 +98,24 @@ public class CommentService {
         Post post = postRepository.findById(postId)
                 .orElseThrow(() -> new RuntimeException("Post not found"));
 
-        List<Comment> comments =
-                commentRepository.findByPostAndParentIsNullOrderByCreatedAtAsc(post);
+        List<Comment> allComments = commentRepository.findByPostOrderByCreatedAtAsc(post);
 
-        return comments.stream()
-                .map(this::buildResponse)
+        // build parentId -> children list map
+        var childrenMap = new java.util.HashMap<Long, java.util.List<Comment>>();
+        java.util.List<Comment> roots = new java.util.ArrayList<>();
+
+        for (Comment c : allComments) {
+            if (c.getParent() == null) {
+                roots.add(c);
+            } else {
+                Long pid = c.getParent().getId();
+                childrenMap.computeIfAbsent(pid, k -> new java.util.ArrayList<>()).add(c);
+            }
+        }
+
+        // build responses from roots using the childrenMap (no further DB queries)
+        return roots.stream()
+                .map(r -> buildResponseWithChildren(r, childrenMap))
                 .toList();
     }
 
@@ -212,11 +225,25 @@ public class CommentService {
         User author = comment.getAuthor();
         String displayName = author.isUseNickname() ? author.getUserNickname() : author.getUserRealname();
 
-        List<CommentResponse> childResponses = commentRepository
-            .findByParentOrderByCreatedAtAsc(comment)
-            .stream()
-            .map(this::buildResponse)
-            .toList();
+        return CommentResponse.builder()
+                .commentId(comment.getId())
+                .writerUuid(author.getUuid())
+                .writer(displayName)
+                .writerProfileImage(author.getProfileImage())
+                .content(comment.getContent())
+                .createdAt(comment.getCreatedAt())
+                .children(java.util.Collections.emptyList())
+                .build();
+    }
+
+    // Build CommentResponse using pre-fetched child lists from childrenMap to avoid extra queries
+    private CommentResponse buildResponseWithChildren(Comment comment, java.util.Map<Long, java.util.List<Comment>> childrenMap) {
+        User author = comment.getAuthor();
+        String displayName = author.isUseNickname() ? author.getUserNickname() : author.getUserRealname();
+
+        java.util.List<CommentResponse> childResponses = childrenMap.getOrDefault(comment.getId(), java.util.Collections.emptyList()).stream()
+                .map(c -> buildResponseWithChildren(c, childrenMap))
+                .toList();
 
         return CommentResponse.builder()
                 .commentId(comment.getId())
