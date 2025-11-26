@@ -3,10 +3,9 @@ package com.ada.proj.service;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -32,6 +31,7 @@ import com.ada.proj.exception.UserNotFoundException;
 import com.ada.proj.repository.UserDataRepository;
 import com.ada.proj.repository.UserRepository;
 import com.ada.proj.service.FileStorageService.StoredFile;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -39,7 +39,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 @Service
 @Transactional
 public class UserService {
-    private static final Logger log = LoggerFactory.getLogger(UserService.class);
 
     private final UserRepository userRepository;
     private final UserDataRepository userDataRepository;
@@ -48,10 +47,10 @@ public class UserService {
     private final ObjectMapper objectMapper;
 
     public UserService(UserRepository userRepository,
-                       UserDataRepository userDataRepository,
-                       PasswordEncoder passwordEncoder,
-                       FileStorageService fileStorageService,
-                       ObjectMapper objectMapper) {
+            UserDataRepository userDataRepository,
+            PasswordEncoder passwordEncoder,
+            FileStorageService fileStorageService,
+            ObjectMapper objectMapper) {
         this.userRepository = userRepository;
         this.userDataRepository = userDataRepository;
         this.passwordEncoder = passwordEncoder;
@@ -66,7 +65,7 @@ public class UserService {
     @Cacheable(cacheNames = "users", key = "#uuid")
     public UserProfileResponse getUserProfile(String uuid) {
         User user = userRepository.findByUuid(uuid)
-            .orElseThrow(() -> new UserNotFoundException("User not found"));
+                .orElseThrow(() -> new UserNotFoundException("User not found"));
         Optional<UserData> userDataOpt = userDataRepository.findByUuid(uuid);
         UserData ud = userDataOpt.orElse(null);
 
@@ -101,24 +100,30 @@ public class UserService {
 
     public void updateRole(String uuid, Role role) {
         User user = userRepository.findByUuid(uuid)
-            .orElseThrow(() -> new UserNotFoundException("User not found"));
+                .orElseThrow(() -> new UserNotFoundException("User not found"));
         user.setRole(role);
     }
 
     @CacheEvict(cacheNames = "users", key = "#uuid")
     public void toggleUseNickname(String uuid) {
         User user = userRepository.findByUuid(uuid)
-            .orElseThrow(() -> new UserNotFoundException("User not found"));
+                .orElseThrow(() -> new UserNotFoundException("User not found"));
         user.setUseNickname(!user.isUseNickname());
     }
 
     @CacheEvict(cacheNames = "users", key = "#uuid")
     public void updateProfile(String uuid, UpdateProfileRequest req) {
         User user = userRepository.findByUuid(uuid)
-            .orElseThrow(() -> new UserNotFoundException("User not found"));
-        if (req.getNickname() != null) user.setUserNickname(req.getNickname());
-        if (req.getProfileImage() != null) user.setProfileImage(req.getProfileImage());
-        if (req.getProfileBanner() != null) user.setProfileBanner(req.getProfileBanner());
+                .orElseThrow(() -> new UserNotFoundException("User not found"));
+        if (req.getNickname() != null) {
+            user.setUserNickname(req.getNickname());
+        }
+        if (req.getProfileImage() != null) {
+            user.setProfileImage(req.getProfileImage());
+        }
+        if (req.getProfileBanner() != null) {
+            user.setProfileBanner(req.getProfileBanner());
+        }
 
         // upsert user_data
         UserData ud = userDataRepository.findByUuid(uuid).orElseGet(() -> {
@@ -150,7 +155,7 @@ public class UserService {
     public UserProfileResponse uploadProfileImage(String uuid, MultipartFile file, Authentication auth) throws IOException {
         ensureSelfOrAdmin(auth, uuid);
         User user = userRepository.findByUuid(uuid)
-            .orElseThrow(() -> new UserNotFoundException("User not found"));
+                .orElseThrow(() -> new UserNotFoundException("User not found"));
         StoredFile saved = fileStorageService.storeImage(file);
         user.setProfileImage(saved.url());
         Optional<UserData> userDataOpt = userDataRepository.findByUuid(uuid);
@@ -192,7 +197,7 @@ public class UserService {
     public UserProfileResponse uploadProfileBanner(String uuid, MultipartFile file, Authentication auth) throws IOException {
         ensureSelfOrAdmin(auth, uuid);
         User user = userRepository.findByUuid(uuid)
-            .orElseThrow(() -> new UserNotFoundException("User not found"));
+                .orElseThrow(() -> new UserNotFoundException("User not found"));
         StoredFile saved = fileStorageService.storeImage(file);
         user.setProfileBanner(saved.url());
         Optional<UserData> userDataOpt = userDataRepository.findByUuid(uuid);
@@ -227,13 +232,13 @@ public class UserService {
                 .build();
     }
 
-        @Caching(evict = {
-            @CacheEvict(cacheNames = "users", key = "#uuid"),
-            @CacheEvict(cacheNames = "users", key = "'custom:' + #req.customId")
-        })
-        public void createCustomLogin(String uuid, CreateCustomLoginRequest req, Authentication auth) {
+    @Caching(evict = {
+        @CacheEvict(cacheNames = "users", key = "#uuid"),
+        @CacheEvict(cacheNames = "users", key = "'custom:' + #req.customId")
+    })
+    public void createCustomLogin(String uuid, CreateCustomLoginRequest req, Authentication auth) {
         User user = userRepository.findByUuid(uuid)
-            .orElseThrow(() -> new UserNotFoundException("User not found"));
+                .orElseThrow(() -> new UserNotFoundException("User not found"));
         // 자신 또는 관리자만 허용
         ensureSelfOrAdmin(auth, uuid);
         if (user.getCustomId() != null) {
@@ -246,12 +251,12 @@ public class UserService {
         user.setPassword(passwordEncoder.encode(req.getPassword()));
     }
 
-        @Caching(evict = {
-            @CacheEvict(cacheNames = "users", key = "#result.uuid", condition = "#result != null"),
-            @CacheEvict(cacheNames = "users", key = "'admin:' + #req.adminId"),
-            @CacheEvict(cacheNames = "users", key = "'custom:' + #req.customId", condition = "#req.customId != null")
-        })
-        public User createUserByAdmin(CreateUserRequest req, Authentication auth) {
+    @Caching(evict = {
+        @CacheEvict(cacheNames = "users", key = "#result.uuid", condition = "#result != null"),
+        @CacheEvict(cacheNames = "users", key = "'admin:' + #req.adminId"),
+        @CacheEvict(cacheNames = "users", key = "'custom:' + #req.customId", condition = "#req.customId != null")
+    })
+    public User createUserByAdmin(CreateUserRequest req, Authentication auth) {
         ensureAdmin(auth);
 
         if (userRepository.findByAdminId(req.getAdminId()).isPresent()) {
@@ -266,21 +271,27 @@ public class UserService {
                 .uuid(java.util.UUID.randomUUID().toString())
                 .adminId(req.getAdminId())
                 .customId(req.getCustomId())
-            .password(req.getPassword() == null ? null : passwordEncoder.encode(req.getPassword()))
+                .password(req.getPassword() == null ? null : passwordEncoder.encode(req.getPassword()))
                 .userRealname(req.getUserRealname())
                 .userNickname(req.getUserNickname())
                 .role(req.getRole() == null ? Role.STUDENT : req.getRole())
-            .profileImage(req.getProfileImage())
-            .profileBanner(req.getProfileBanner())
+                .profileImage(req.getProfileImage())
+                .profileBanner(req.getProfileBanner())
                 .build();
-        user = userRepository.save(user);
+        user = userRepository.save(Objects.requireNonNull(user));
 
         if (req.getIntro() != null || req.getTechStack() != null || req.getLinks() != null) {
             UserData ud = new UserData();
             ud.setUuid(user.getUuid());
-            if (req.getIntro() != null) ud.setIntro(req.getIntro());
-            if (req.getTechStack() != null) ud.setTechStack(serializeTechStack(req.getTechStack()));
-            if (req.getLinks() != null) ud.setLinks(serializeLinks(req));
+            if (req.getIntro() != null) {
+                ud.setIntro(req.getIntro());
+            }
+            if (req.getTechStack() != null) {
+                ud.setTechStack(serializeTechStack(req.getTechStack()));
+            }
+            if (req.getLinks() != null) {
+                ud.setLinks(serializeLinks(req));
+            }
             userDataRepository.save(ud);
         }
 
@@ -288,15 +299,15 @@ public class UserService {
     }
 
     /**
-     * Create the very first ADMIN account when none exists. This can be called without authentication
-     * but will fail if any ADMIN already exists.
+     * Create the very first ADMIN account when none exists. This can be called
+     * without authentication but will fail if any ADMIN already exists.
      */
-        @Caching(evict = {
-            @CacheEvict(cacheNames = "users", key = "#result.uuid", condition = "#result != null"),
-            @CacheEvict(cacheNames = "users", key = "'admin:' + #req.adminId"),
-            @CacheEvict(cacheNames = "users", key = "'custom:' + #req.customId", condition = "#req.customId != null")
-        })
-        public User createInitialAdmin(CreateUserRequest req) {
+    @Caching(evict = {
+        @CacheEvict(cacheNames = "users", key = "#result.uuid", condition = "#result != null"),
+        @CacheEvict(cacheNames = "users", key = "'admin:' + #req.adminId"),
+        @CacheEvict(cacheNames = "users", key = "'custom:' + #req.customId", condition = "#req.customId != null")
+    })
+    public User createInitialAdmin(CreateUserRequest req) {
         // if any ADMIN exists, disallow unauthenticated init
         if (userRepository.existsByRole(Role.ADMIN)) {
             throw new ForbiddenException("Admin already exists");
@@ -310,21 +321,27 @@ public class UserService {
                 .uuid(java.util.UUID.randomUUID().toString())
                 .adminId(req.getAdminId())
                 .customId(req.getCustomId())
-            .password(req.getPassword() == null ? null : passwordEncoder.encode(req.getPassword()))
+                .password(req.getPassword() == null ? null : passwordEncoder.encode(req.getPassword()))
                 .userRealname(req.getUserRealname())
                 .userNickname(req.getUserNickname())
                 .role(Role.ADMIN)
-            .profileImage(req.getProfileImage())
-            .profileBanner(req.getProfileBanner())
+                .profileImage(req.getProfileImage())
+                .profileBanner(req.getProfileBanner())
                 .build();
-        user = userRepository.save(user);
+        user = userRepository.save(Objects.requireNonNull(user));
 
         if (req.getIntro() != null || req.getTechStack() != null || req.getLinks() != null) {
             UserData ud = new UserData();
             ud.setUuid(user.getUuid());
-            if (req.getIntro() != null) ud.setIntro(req.getIntro());
-            if (req.getTechStack() != null) ud.setTechStack(serializeTechStack(req.getTechStack()));
-            if (req.getLinks() != null) ud.setLinks(serializeLinks(req));
+            if (req.getIntro() != null) {
+                ud.setIntro(req.getIntro());
+            }
+            if (req.getTechStack() != null) {
+                ud.setTechStack(serializeTechStack(req.getTechStack()));
+            }
+            if (req.getLinks() != null) {
+                ud.setLinks(serializeLinks(req));
+            }
             userDataRepository.save(ud);
         }
 
@@ -332,9 +349,13 @@ public class UserService {
     }
 
     private void ensureAdmin(Authentication auth) {
-        if (auth == null) throw new UnauthenticatedException("Unauthenticated");
+        if (auth == null) {
+            throw new UnauthenticatedException("Unauthenticated");
+        }
         boolean isAdmin = auth.getAuthorities().stream().map(GrantedAuthority::getAuthority).anyMatch(a -> a.equals("ROLE_ADMIN"));
-        if (!isAdmin) throw new ForbiddenException("Forbidden");
+        if (!isAdmin) {
+            throw new ForbiddenException("Forbidden");
+        }
     }
 
     @CacheEvict(cacheNames = "users", key = "#uuid")
@@ -349,7 +370,9 @@ public class UserService {
     }
 
     private void ensureSelfOrAdmin(Authentication auth, String uuid) {
-        if (auth == null) throw new UnauthenticatedException("Unauthenticated");
+        if (auth == null) {
+            throw new UnauthenticatedException("Unauthenticated");
+        }
         boolean isAdmin = auth.getAuthorities().stream().map(GrantedAuthority::getAuthority).anyMatch(a -> a.equals("ROLE_ADMIN"));
         String principal = auth.getName();
         if (!isAdmin && !uuid.equals(principal)) {
@@ -358,20 +381,26 @@ public class UserService {
     }
 
     private List<String> parseTechStack(String stored) {
+        if (stored == null || stored.isBlank()) {
+            return null;
+        }
         try {
             String s = stored.trim();
             if (s.startsWith("[")) {
                 // JSON array
-                return objectMapper.readValue(s, new TypeReference<List<String>>(){});
+                return objectMapper.readValue(s, new TypeReference<List<String>>() {
+                });
             }
             // CSV fallback
             List<String> list = new ArrayList<>();
             for (String it : s.split(",")) {
                 String v = it.trim();
-                if (!v.isEmpty()) list.add(v);
+                if (!v.isEmpty()) {
+                    list.add(v);
+                }
             }
             return list.isEmpty() ? null : list;
-        } catch (Exception e) {
+        } catch (IOException e) {
             return null;
         }
     }
@@ -379,35 +408,50 @@ public class UserService {
     private String serializeTechStack(List<String> list) {
         try {
             return objectMapper.writeValueAsString(list);
-        } catch (Exception e) {
+        } catch (JsonProcessingException e) {
             return null;
         }
     }
 
     private String serializeLinks(UpdateProfileRequest req) {
+        ProfileLinksRequest links = req.getLinks();
+        if (links == null) {
+            return null;
+        }
         try {
             // Build a JSON object from ProfileLinksRequest keeping only non-null values
-            JsonNode node = objectMapper.valueToTree(req.getLinks());
+            JsonNode node = objectMapper.valueToTree(links);
             return objectMapper.writeValueAsString(node);
-        } catch (Exception e) {
+        } catch (JsonProcessingException e) {
             return null;
         }
     }
 
     private String serializeLinks(CreateUserRequest req) {
+        ProfileLinksRequest links = req.getLinks();
+        if (links == null) {
+            return null;
+        }
         try {
-            JsonNode node = objectMapper.valueToTree(req.getLinks());
+            JsonNode node = objectMapper.valueToTree(links);
             return objectMapper.writeValueAsString(node);
-        } catch (Exception e) {
+        } catch (JsonProcessingException e) {
             return null;
         }
     }
 
     private ProfileLinksRequest parseLinks(String json) {
+        if (json == null || json.isBlank()) {
+            return null;
+        }
         try {
             return objectMapper.readValue(json, ProfileLinksRequest.class);
-        } catch (Exception e) {
+        } catch (IOException e) {
             return null;
         }
     }
 }
+
+
+
+  

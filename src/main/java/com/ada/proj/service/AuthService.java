@@ -3,6 +3,7 @@ package com.ada.proj.service;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
+import java.util.Objects;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -68,11 +69,11 @@ public class AuthService {
         refreshTokenRepository.findByUuid(user.getUuid()).ifPresent(rt -> refreshTokenRepository.deleteByUuid(user.getUuid()));
 
         RefreshToken entity = RefreshToken.builder()
-                .uuid(user.getUuid())
-                .token(refreshToken)
-                .expiresAt(Instant.now().plusMillis(604800000)) // default 7d (동일 설정)
-                .build();
-        refreshTokenRepository.save(entity);
+            .uuid(user.getUuid())
+            .token(refreshToken)
+            .expiresAt(Instant.now().plusMillis(604800000)) // default 7d (동일 설정)
+            .build();
+        refreshTokenRepository.save(Objects.requireNonNull(entity));
 
     LoginResponse resp = LoginResponse.builder()
         .tokenType("Bearer")
@@ -120,11 +121,11 @@ public class AuthService {
         refreshTokenRepository.findByUuid(user.getUuid()).ifPresent(rt -> refreshTokenRepository.deleteByUuid(user.getUuid()));
 
         RefreshToken entity = RefreshToken.builder()
-                .uuid(user.getUuid())
-                .token(refreshToken)
-                .expiresAt(Instant.now().plusMillis(604800000))
-                .build();
-        refreshTokenRepository.save(entity);
+            .uuid(user.getUuid())
+            .token(refreshToken)
+            .expiresAt(Instant.now().plusMillis(604800000))
+            .build();
+        refreshTokenRepository.save(Objects.requireNonNull(entity));
 
     LoginResponse resp = LoginResponse.builder()
         .tokenType("Bearer")
@@ -171,11 +172,11 @@ public class AuthService {
         refreshTokenRepository.findByUuid(user.getUuid()).ifPresent(rt -> refreshTokenRepository.deleteByUuid(user.getUuid()));
 
         RefreshToken entity = RefreshToken.builder()
-                .uuid(user.getUuid())
-                .token(refreshToken)
-                .expiresAt(Instant.now().plusMillis(604800000))
-                .build();
-        refreshTokenRepository.save(entity);
+            .uuid(user.getUuid())
+            .token(refreshToken)
+            .expiresAt(Instant.now().plusMillis(604800000))
+            .build();
+        refreshTokenRepository.save(Objects.requireNonNull(entity));
 
     LoginResponse resp = LoginResponse.builder()
         .tokenType("Bearer")
@@ -221,11 +222,11 @@ public class AuthService {
         refreshTokenRepository.findByUuid(uuid).ifPresent(rt -> refreshTokenRepository.deleteByUuid(uuid));
 
         RefreshToken entity = RefreshToken.builder()
-                .uuid(uuid)
-                .token(refreshToken)
-                .expiresAt(Instant.now().plusMillis(604800000))
-                .build();
-        refreshTokenRepository.save(entity);
+            .uuid(uuid)
+            .token(refreshToken)
+            .expiresAt(Instant.now().plusMillis(604800000))
+            .build();
+        refreshTokenRepository.save(Objects.requireNonNull(entity));
 
         LoginResponse resp = LoginResponse.builder()
                 .tokenType("Bearer")
@@ -382,7 +383,7 @@ public class AuthService {
                 .userNickname(req.getUserNickname())
                 .role(Role.TEACHER)
                 .build();
-        return userRepository.save(user);
+        return userRepository.save(Objects.requireNonNull(user));
     }
 
     private String safeId(String id) {

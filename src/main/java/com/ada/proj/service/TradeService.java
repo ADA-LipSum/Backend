@@ -72,8 +72,8 @@ public class TradeService {
                 .orElseThrow(() -> new RuntimeException("Operator not found"));
 
         // 권한 검사
-        if (!(operator.getRole().name().equals("ADMIN") ||
-                operator.getRole().name().equals("TEACHER"))) {
+        if (!(operator.getRole().name().equals("ADMIN")
+                || operator.getRole().name().equals("TEACHER"))) {
             throw new IllegalStateException("재고 충전은 관리자 및 선생님만 가능합니다.");
         }
 
@@ -100,10 +100,10 @@ public class TradeService {
      */
     @Transactional(readOnly = true)
     public Page<TradeItem> searchItems(String keyword, TradeCategory category, Integer minPrice,
-                                       Integer maxPrice, Boolean active, int page, int size,
-                                       String sort, String dir) {
+            Integer maxPrice, Boolean active, int page, int size,
+            String sort, String dir) {
 
-        Specification<TradeItem> spec = Specification.where(null);
+        Specification<TradeItem> spec = (root, query, cb) -> cb.conjunction();
 
         if (active != null) {
             spec = spec.and((root, q, cb) -> cb.equal(root.get("active"), active));
@@ -128,10 +128,14 @@ public class TradeService {
         Sort.Direction direction = "asc".equalsIgnoreCase(dir) ? Sort.Direction.ASC : Sort.Direction.DESC;
 
         String sortProp = switch (sort == null ? "" : sort) {
-            case "price" -> "price";
-            case "name" -> "name";
-            case "createdAt", "created_at", "newest" -> "createdAt";
-            default -> "createdAt";
+            case "price" ->
+                "price";
+            case "name" ->
+                "name";
+            case "createdAt", "created_at", "newest" ->
+                "createdAt";
+            default ->
+                "createdAt";
         };
 
         Pageable pageable = PageRequest.of(page, size, Sort.by(direction, sortProp));
@@ -255,14 +259,13 @@ public class TradeService {
     }
 
     /**
-     * 아이템 삭제(Soft Delete)
-     * active = false 로 비활성화
+     * 아이템 삭제(Soft Delete) active = false 로 비활성화
      */
     @Transactional
     public void deleteItem(String itemUuid) {
         TradeItem item = tradeItemRepository.findByItemUuid(itemUuid)
-                .orElseThrow(() ->
-                        new IllegalArgumentException("해당 아이템을 찾을 수 없습니다: " + itemUuid));
+                .orElseThrow(()
+                        -> new IllegalArgumentException("해당 아이템을 찾을 수 없습니다: " + itemUuid));
 
         item.setActive(false);
     }
@@ -272,6 +275,7 @@ public class TradeService {
      */
     @lombok.Value
     public static class TradeResult {
+
         TradeItem item;
         TradeLog log;
         UserPoints pointsTx;

@@ -1,10 +1,12 @@
 package com.ada.proj.controller;
 
 import java.io.IOException;
+import java.util.Objects;
 
 import com.ada.proj.dto.*;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.lang.NonNull;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -45,74 +47,88 @@ public class PostController {
     private final com.ada.proj.service.CommentService commentService; // 댓글 조회 REST 경로 제공
 
     // 파일 포함 생성
-    @PostMapping(path = {"","/","/multipart"}, consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-        @Operation(
+    @PostMapping(path = {"", "/", "/multipart"}, consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @Operation(
             summary = "게시물 생성(파일 포함)",
             description = "@RequestPart('data') JSON에 title, content(contentMd 호환), isDev, devTags 포함 가능. 이미지/영상 파일 동시 업로드 지원.",
             security = @SecurityRequirement(name = "bearerAuth")
-        )
-        @io.swagger.v3.oas.annotations.parameters.RequestBody(content = @Content(mediaType = MediaType.MULTIPART_FORM_DATA_VALUE,
-            encoding = { @Encoding(name = "data", contentType = MediaType.APPLICATION_JSON_VALUE) }
-        ))
-        public ResponseEntity<ApiResponse<String>> createWithFiles(
-                @Parameter(name = "data", description = "게시물 본문 JSON (title, content, isDev, devTags). images/videos는 서버가 파일로 자동 설정합니다.", required = true,
+    )
+    @io.swagger.v3.oas.annotations.parameters.RequestBody(content = @Content(mediaType = MediaType.MULTIPART_FORM_DATA_VALUE,
+            encoding = {
+                @Encoding(name = "data", contentType = MediaType.APPLICATION_JSON_VALUE)}
+    ))
+    public ResponseEntity<ApiResponse<String>> createWithFiles(
+            @Parameter(name = "data", description = "게시물 본문 JSON (title, content, isDev, devTags). images/videos는 서버가 파일로 자동 설정합니다.", required = true,
                     content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
-                        schema = @Schema(implementation = PostCreateRequest.class),
-                        examples = @ExampleObject(value = "{\n  \"title\": \"제목\",\n  \"content\": \"본문\",\n  \"isDev\": true,\n  \"devTags\": \"spring\"\n}")))
+                            schema = @Schema(implementation = PostCreateRequest.class),
+                            examples = @ExampleObject(value = "{\n  \"title\": \"제목\",\n  \"content\": \"본문\",\n  \"isDev\": true,\n  \"devTags\": \"spring\"\n}")))
             @Valid @RequestPart("data") PostCreateRequest data,
             @Parameter(name = "files", description = "이미지/영상 혼합 업로드 (단일 배열)",
-                content = @Content(mediaType = MediaType.MULTIPART_FORM_DATA_VALUE,
-                    schema = @Schema(type = "string", format = "binary")))
+                    content = @Content(mediaType = MediaType.MULTIPART_FORM_DATA_VALUE,
+                            schema = @Schema(type = "string", format = "binary")))
             @RequestPart(value = "files", required = false) MultipartFile[] files,
             @Parameter(name = "imageFiles", description = "이미지 파일 배열(하위호환)",
-                content = @Content(mediaType = MediaType.MULTIPART_FORM_DATA_VALUE,
-                    schema = @Schema(type = "string", format = "binary")))
+                    content = @Content(mediaType = MediaType.MULTIPART_FORM_DATA_VALUE,
+                            schema = @Schema(type = "string", format = "binary")))
             @RequestPart(value = "imageFiles", required = false) MultipartFile[] imageFiles,
             @Parameter(name = "videoFiles", description = "영상 파일 배열(하위호환)",
-                content = @Content(mediaType = MediaType.MULTIPART_FORM_DATA_VALUE,
-                    schema = @Schema(type = "string", format = "binary")))
+                    content = @Content(mediaType = MediaType.MULTIPART_FORM_DATA_VALUE,
+                            schema = @Schema(type = "string", format = "binary")))
             @RequestPart(value = "videoFiles", required = false) MultipartFile[] videoFiles,
             Authentication authentication
     ) throws IOException {
+        PostCreateRequest payload = Objects.requireNonNull(data, "data");
         if (authentication != null) {
-            data.setWriterUuid(authentication.getName());
+            payload.setWriterUuid(authentication.getName());
         }
 
         StringBuilder md = new StringBuilder();
-        if (data.getContent() != null) { md.append(data.getContent()); }
+        if (payload.getContent() != null) {
+            md.append(payload.getContent());
+        }
 
         // 단일 files 배열도 허용(이미지/영상 자동 판별). 하위호환: imageFiles, videoFiles 유지
-        appendMixedFiles(data, files, md);
-        appendImages(data, imageFiles, md);
-        appendVideos(data, videoFiles, md);
+        appendMixedFiles(payload, files, md);
+        appendImages(payload, imageFiles, md);
+        appendVideos(payload, videoFiles, md);
 
-        data.setContent(md.toString());
-        String uuid = postService.create(data);
+        payload.setContent(md.toString());
+        String uuid = postService.create(payload);
         return ResponseEntity.status(org.springframework.http.HttpStatus.CREATED)
-            .body(ApiResponse.success(uuid));
+                .body(ApiResponse.success(uuid));
     }
 
     private void appendMixedFiles(PostCreateRequest data, MultipartFile[] files, StringBuilder md) throws IOException {
-        if (files == null) return;
+        if (files == null) {
+            return;
+        }
         String firstImg = null;
         String firstVid = null;
         for (MultipartFile f : files) {
-            if (f == null || f.isEmpty()) continue;
+            if (f == null || f.isEmpty()) {
+                continue;
+            }
             String ct = f.getContentType();
             if (ct != null && ct.startsWith("image")) {
                 StoredFile saved = fileStorageService.storeImage(f);
-                if (firstImg == null) firstImg = saved.url();
+                if (firstImg == null) {
+                    firstImg = saved.url();
+                }
                 md.append("\n\n![image](").append(saved.url()).append(")\n");
             } else if (ct != null && ct.startsWith("video")) {
                 StoredFile saved = fileStorageService.storeVideo(f);
-                if (firstVid == null) firstVid = saved.url();
+                if (firstVid == null) {
+                    firstVid = saved.url();
+                }
                 md.append("\n\n<video controls src=\"")
-                  .append(saved.url())
-                  .append("\" style=\"max-width:100%\"></video>\n");
+                        .append(saved.url())
+                        .append("\" style=\"max-width:100%\"></video>\n");
             } else {
                 // 타입을 모르면 이미지로 시도(필요시 정책 변경)
                 StoredFile saved = fileStorageService.storeImage(f);
-                if (firstImg == null) firstImg = saved.url();
+                if (firstImg == null) {
+                    firstImg = saved.url();
+                }
                 md.append("\n\n![file](").append(saved.url()).append(")\n");
             }
         }
@@ -125,12 +141,18 @@ public class PostController {
     }
 
     private void appendImages(PostCreateRequest data, MultipartFile[] imageFiles, StringBuilder md) throws IOException {
-        if (imageFiles == null) return;
+        if (imageFiles == null) {
+            return;
+        }
         String firstImg = null;
         for (MultipartFile f : imageFiles) {
-            if (f == null || f.isEmpty()) continue;
+            if (f == null || f.isEmpty()) {
+                continue;
+            }
             StoredFile saved = fileStorageService.storeImage(f);
-            if (firstImg == null) firstImg = saved.url();
+            if (firstImg == null) {
+                firstImg = saved.url();
+            }
             md.append("\n\n![image](").append(saved.url()).append(")\n");
         }
         if (firstImg != null && (data.getImages() == null || data.getImages().isBlank())) {
@@ -139,15 +161,21 @@ public class PostController {
     }
 
     private void appendVideos(PostCreateRequest data, MultipartFile[] videoFiles, StringBuilder md) throws IOException {
-        if (videoFiles == null) return;
+        if (videoFiles == null) {
+            return;
+        }
         String firstVid = null;
         for (MultipartFile f : videoFiles) {
-            if (f == null || f.isEmpty()) continue;
+            if (f == null || f.isEmpty()) {
+                continue;
+            }
             StoredFile saved = fileStorageService.storeVideo(f);
-            if (firstVid == null) firstVid = saved.url();
+            if (firstVid == null) {
+                firstVid = saved.url();
+            }
             md.append("\n\n<video controls src=\"")
-              .append(saved.url())
-              .append("\" style=\"max-width:100%\"></video>\n");
+                    .append(saved.url())
+                    .append("\" style=\"max-width:100%\"></video>\n");
         }
         if (firstVid != null && (data.getVideos() == null || data.getVideos().isBlank())) {
             data.setVideos(firstVid);
@@ -163,7 +191,7 @@ public class PostController {
             @RequestParam("uuid") String uuid,
             @RequestBody PostUpdateRequest req,
             Authentication authentication) {
-        postService.update(uuid, req);
+        postService.update(requireUuid(uuid), requireUpdateRequest(req));
         return ResponseEntity.ok(ApiResponse.success());
     }
 
@@ -174,7 +202,7 @@ public class PostController {
             @PathVariable("uuid") String uuid,
             @RequestBody PostUpdateRequest req,
             Authentication authentication) {
-        postService.update(uuid, req);
+        postService.update(requireUuid(uuid), requireUpdateRequest(req));
         return ResponseEntity.ok(ApiResponse.success());
     }
 
@@ -186,7 +214,7 @@ public class PostController {
             @PathVariable("seq") Long seq,
             @RequestBody PostUpdateRequest req,
             Authentication authentication) {
-        postService.updateBySeq(seq, req);
+        postService.updateBySeq(requireSeq(seq), requireUpdateRequest(req));
         return ResponseEntity.ok(ApiResponse.success());
     }
 
@@ -198,7 +226,7 @@ public class PostController {
             @Parameter(description = "게시글 UUID", example = "post-uuid-...")
             @RequestParam("uuid") String uuid,
             Authentication authentication) {
-        postService.delete(uuid);
+        postService.delete(requireUuid(uuid));
         return ResponseEntity.ok(ApiResponse.success());
     }
 
@@ -208,7 +236,7 @@ public class PostController {
             @Parameter(description = "게시글 UUID", example = "post-uuid-...")
             @PathVariable("uuid") String uuid,
             Authentication authentication) {
-        postService.delete(uuid);
+        postService.delete(requireUuid(uuid));
         return ResponseEntity.ok(ApiResponse.success());
     }
 
@@ -219,7 +247,7 @@ public class PostController {
             @Parameter(description = "게시글 seq", example = "123")
             @PathVariable("seq") Long seq,
             Authentication authentication) {
-        postService.deleteBySeq(seq);
+        postService.deleteBySeq(requireSeq(seq));
         return ResponseEntity.ok(ApiResponse.success());
     }
 
@@ -230,7 +258,7 @@ public class PostController {
     public ResponseEntity<ApiResponse<PostDetailResponse>> legacyDetail(
             @Parameter(description = "게시글 UUID", example = "post-uuid-...")
             @RequestParam("uuid") String uuid) {
-        return ResponseEntity.ok(ApiResponse.success(postService.detail(uuid)));
+        return ResponseEntity.ok(ApiResponse.success(postService.detail(requireUuid(uuid))));
     }
 
     @GetMapping("/{uuid}")
@@ -238,7 +266,7 @@ public class PostController {
     public ResponseEntity<ApiResponse<PostDetailResponse>> detail(
             @Parameter(description = "게시글 UUID", example = "post-uuid-...")
             @PathVariable("uuid") String uuid) {
-        return ResponseEntity.ok(ApiResponse.success(postService.detail(uuid)));
+        return ResponseEntity.ok(ApiResponse.success(postService.detail(requireUuid(uuid))));
     }
 
     // seq 기반 상세 조회
@@ -247,33 +275,32 @@ public class PostController {
     public ResponseEntity<ApiResponse<PostDetailResponse>> detailBySeq(
             @Parameter(description = "게시글 seq", example = "123")
             @PathVariable("seq") Long seq) {
-        return ResponseEntity.ok(ApiResponse.success(postService.detailBySeq(seq)));
+        return ResponseEntity.ok(ApiResponse.success(postService.detailBySeq(requireSeq(seq))));
     }
 
-        @Deprecated
-        @Hidden
-        @GetMapping("/list")
-        @Operation(summary = "[Deprecated] 게시글 목록", description = "GET /api/posts 사용")
-        public ApiResponse<PageResponse<PostSummaryResponse>> legacyList(
+    @Deprecated
+    @Hidden
+    @GetMapping("/list")
+    @Operation(summary = "[Deprecated] 게시글 목록", description = "GET /api/posts 사용")
+    public ApiResponse<PageResponse<PostSummaryResponse>> legacyList(
             @Parameter(description = "조회할 페이지 번호", example = "0")
             @RequestParam(defaultValue = "0") int page,
-
             @Parameter(description = "한 페이지에 포함될 게시글 개수", example = "20")
             @RequestParam(defaultValue = "20") int size
     ) {
         return ApiResponse.success(postService.list(page, size));
     }
 
-        @GetMapping
-        @Operation(summary = "게시글 목록 조회", description = "page/size 기반 목록 조회")
-        public ResponseEntity<ApiResponse<PageResponse<PostSummaryResponse>>> list(
+    @GetMapping
+    @Operation(summary = "게시글 목록 조회", description = "page/size 기반 목록 조회")
+    public ResponseEntity<ApiResponse<PageResponse<PostSummaryResponse>>> list(
             @Parameter(description = "조회할 페이지 번호", example = "0")
             @RequestParam(defaultValue = "0") int page,
             @Parameter(description = "한 페이지에 포함될 게시글 개수", example = "20")
             @RequestParam(defaultValue = "20") int size
-        ) {
+    ) {
         return ResponseEntity.ok(ApiResponse.success(postService.list(page, size)));
-        }
+    }
 
     @Deprecated
     @Hidden
@@ -283,8 +310,11 @@ public class PostController {
             @RequestParam String uuid,
             Authentication auth
     ) {
-        if (auth == null) throw new SecurityException("로그인이 필요합니다.");
-        boolean liked = postService.toggleLike(auth.getName(), uuid);
+        if (auth == null) {
+            throw new SecurityException("로그인이 필요합니다.");
+        }
+        String principal = Objects.requireNonNull(auth.getName(), "principal");
+        boolean liked = postService.toggleLike(principal, requireUuid(uuid));
         return ApiResponse.success(liked);
     }
 
@@ -294,8 +324,11 @@ public class PostController {
             @PathVariable("uuid") String uuid,
             Authentication auth
     ) {
-        if (auth == null) throw new SecurityException("로그인이 필요합니다.");
-        boolean liked = postService.toggleLike(auth.getName(), uuid);
+        if (auth == null) {
+            throw new SecurityException("로그인이 필요합니다.");
+        }
+        String principal = Objects.requireNonNull(auth.getName(), "principal");
+        boolean liked = postService.toggleLike(principal, requireUuid(uuid));
         return ResponseEntity.ok(ApiResponse.success(liked));
     }
 
@@ -306,8 +339,11 @@ public class PostController {
             @PathVariable("seq") Long seq,
             Authentication auth
     ) {
-        if (auth == null) throw new SecurityException("로그인이 필요합니다.");
-        boolean liked = postService.toggleLikeBySeq(auth.getName(), seq);
+        if (auth == null) {
+            throw new SecurityException("로그인이 필요합니다.");
+        }
+        String principal = Objects.requireNonNull(auth.getName(), "principal");
+        boolean liked = postService.toggleLikeBySeq(principal, requireSeq(seq));
         return ResponseEntity.ok(ApiResponse.success(liked));
     }
 
@@ -318,8 +354,11 @@ public class PostController {
             @PathVariable("id") Long id,
             Authentication auth
     ) {
-        if (auth == null) throw new SecurityException("로그인이 필요합니다.");
-        postService.deleteLikeById(id, auth.getName());
+        if (auth == null) {
+            throw new SecurityException("로그인이 필요합니다.");
+        }
+        String principal = Objects.requireNonNull(auth.getName(), "principal");
+        postService.deleteLikeById(requireLikeId(id), principal);
         return ResponseEntity.ok(ApiResponse.success());
     }
 
@@ -327,7 +366,7 @@ public class PostController {
     @Operation(summary = "게시글 댓글 조회", description = "게시글의 최상위 및 대댓글 포함 전체 댓글 반환")
     public ResponseEntity<ApiResponse<java.util.List<CommentResponse>>> comments(
             @PathVariable("uuid") String uuid) {
-        return ResponseEntity.ok(ApiResponse.success(commentService.getCommentsByPost(uuid)));
+        return ResponseEntity.ok(ApiResponse.success(commentService.getCommentsByPost(requireUuid(uuid))));
     }
 
     // seq 기반 댓글 조회
@@ -335,7 +374,27 @@ public class PostController {
     @Operation(summary = "게시글 댓글 조회 (seq)", description = "seq로 게시글의 댓글 전체 조회")
     public ResponseEntity<ApiResponse<java.util.List<CommentResponse>>> commentsBySeq(
             @PathVariable("seq") Long seq) {
-        PostDetailResponse pd = postService.detailBySeq(seq);
-        return ResponseEntity.ok(ApiResponse.success(commentService.getCommentsByPost(pd.getPostUuid())));
+        PostDetailResponse pd = postService.detailBySeq(requireSeq(seq));
+        return ResponseEntity.ok(ApiResponse.success(commentService.getCommentsByPost(requireUuid(pd.getPostUuid()))));
+    }
+
+    private @NonNull
+    String requireUuid(String uuid) {
+        return Objects.requireNonNull(uuid, "uuid");
+    }
+
+    private @NonNull
+    Long requireSeq(Long seq) {
+        return Objects.requireNonNull(seq, "seq");
+    }
+
+    private @NonNull
+    Long requireLikeId(Long id) {
+        return Objects.requireNonNull(id, "id");
+    }
+
+    private @NonNull
+    PostUpdateRequest requireUpdateRequest(PostUpdateRequest req) {
+        return Objects.requireNonNull(req, "request");
     }
 }

@@ -2,6 +2,7 @@ package com.ada.proj.service;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
@@ -183,20 +184,20 @@ public class AutoIncrementMaintenanceService {
 
         jdbcTemplate.execute("SET FOREIGN_KEY_CHECKS=0");
 
-        jdbcTemplate.execute(String.format(UPDATE_MAP_ADD_OFFSET_TEMPLATE, map, offset));
+        jdbcTemplate.execute(Objects.requireNonNull(String.format(UPDATE_MAP_ADD_OFFSET_TEMPLATE, map, offset)));
 
-        jdbcTemplate.execute(String.format(UPDATE_JOIN_BASE_TEMPLATE, table, map, pk, pk));
+        jdbcTemplate.execute(Objects.requireNonNull(String.format(UPDATE_JOIN_BASE_TEMPLATE, table, map, pk, pk)));
 
         for (FkRef fk : getReferencingFks(table, pk)) {
-            jdbcTemplate.execute(String.format(UPDATE_JOIN_REF_TEMPLATE, fk.table, map, fk.column, fk.column));
+            jdbcTemplate.execute(Objects.requireNonNull(String.format(UPDATE_JOIN_REF_TEMPLATE, fk.table, map, fk.column, fk.column)));
         }
 
-        jdbcTemplate.execute(String.format(UPDATE_MAP_TO_FINAL_TEMPLATE, map, offset));
+        jdbcTemplate.execute(Objects.requireNonNull(String.format(UPDATE_MAP_TO_FINAL_TEMPLATE, map, offset)));
 
-        jdbcTemplate.execute(String.format(UPDATE_JOIN_BASE_TEMPLATE, table, map, pk, pk));
+        jdbcTemplate.execute(Objects.requireNonNull(String.format(UPDATE_JOIN_BASE_TEMPLATE, table, map, pk, pk)));
 
         for (FkRef fk : getReferencingFks(table, pk)) {
-            jdbcTemplate.execute(String.format(UPDATE_JOIN_REF_TEMPLATE, fk.table, map, fk.column, fk.column));
+            jdbcTemplate.execute(Objects.requireNonNull(String.format(UPDATE_JOIN_REF_TEMPLATE, fk.table, map, fk.column, fk.column)));
         }
 
         jdbcTemplate.execute("SET FOREIGN_KEY_CHECKS=1");

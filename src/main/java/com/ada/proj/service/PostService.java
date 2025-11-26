@@ -1,9 +1,12 @@
 package com.ada.proj.service;
 
+import java.util.Objects;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.lang.NonNull;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -33,19 +36,24 @@ public class PostService {
     private final UserRepository userRepository;
     private final PostLikeRepository postLikeRepository;
 
-    private Post getPostByUuidOrThrow(String uuid) {
+    private @NonNull
+    String requirePostUuid(Post post) {
+        return Objects.requireNonNull(post.getPostUuid(), "postUuid is required");
+    }
+
+    private Post getPostByUuidOrThrow(@NonNull String uuid) {
         return postRepository.findById(uuid)
                 .orElseThrow(() -> new EntityNotFoundException("Post not found: " + uuid));
     }
 
-    private Post getPostBySeqOrThrow(Long seq) {
+    private Post getPostBySeqOrThrow(@NonNull Long seq) {
         return postRepository.findBySeq(seq)
                 .orElseThrow(() -> new EntityNotFoundException("Post not found (seq): " + seq));
     }
 
     // 생성
     @Transactional
-    public String create(PostCreateRequest req) {
+    public String create(@NonNull PostCreateRequest req) {
 
         String writerUuid = req.getWriterUuid();
         if (writerUuid == null || writerUuid.isBlank()) {
@@ -71,7 +79,7 @@ public class PostService {
                 .images(req.getImages())
                 .videos(req.getVideos())
                 .writer(writerName)
-                .isDev(req.getIsDev() != null ? req.getIsDev() : false)
+                .isDev(Boolean.TRUE.equals(req.getIsDev()))
                 .devTags(req.getDevTags())
                 .build();
 
@@ -79,7 +87,7 @@ public class PostService {
             p.setContent(req.getContent());
         }
 
-        return postRepository.save(p).getPostUuid();
+        return postRepository.save(Objects.requireNonNull(p)).getPostUuid();
     }
 
     // 목록
@@ -89,14 +97,14 @@ public class PostService {
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "writedAt"));
 
         Page<PostSummaryResponse> result = postRepository.findSummaryPage(pageable)
-            .map(dto -> {
-                // tag 계산
-                String tag = (Boolean.TRUE.equals(dto.getIsDev()))
-                    ? (dto.getDevTags() != null && !dto.getDevTags().isBlank() ? "개발(" + dto.getDevTags() + ")" : "개발")
-                    : "일반";
-                dto.setTag(tag);
-                return dto;
-            });
+                .map(dto -> {
+                    // tag 계산
+                    String tag = (Boolean.TRUE.equals(dto.getIsDev()))
+                            ? (dto.getDevTags() != null && !dto.getDevTags().isBlank() ? "개발(" + dto.getDevTags() + ")" : "개발")
+                            : "일반";
+                    dto.setTag(tag);
+                    return dto;
+                });
 
         return new PageResponse<>(
                 result.getNumber(),
@@ -109,7 +117,7 @@ public class PostService {
 
     // 상세(+조회수)
     @Transactional
-    public PostDetailResponse detail(String uuid) {
+    public PostDetailResponse detail(@NonNull String uuid) {
 
         postRepository.increaseViews(uuid);
 
@@ -139,34 +147,46 @@ public class PostService {
 
     // seq 기반 상세 조회 (uuid 기반 상세 재사용)
     @Transactional
-    public PostDetailResponse detailBySeq(Long seq) {
+    public PostDetailResponse detailBySeq(@NonNull Long seq) {
         Post p = getPostBySeqOrThrow(seq);
-        return detail(p.getPostUuid());
+        return detail(requirePostUuid(p));
     }
 
     // 수정
     @Transactional
-    public void update(String uuid, PostUpdateRequest req) {
+    public void update(@NonNull String uuid, @NonNull PostUpdateRequest req) {
         Post p = getPostByUuidOrThrow(uuid);
 
-        if (req.getTitle() != null) p.setTitle(req.getTitle());
-        if (req.getContent() != null) p.setContent(req.getContent());
-        if (req.getImages() != null) p.setImages(req.getImages());
-        if (req.getVideos() != null) p.setVideos(req.getVideos());
-        if (req.getIsDev() != null) p.setIsDev(req.getIsDev());
-        if (req.getDevTags() != null) p.setDevTags(req.getDevTags());
+        if (req.getTitle() != null) {
+            p.setTitle(req.getTitle());
+        }
+        if (req.getContent() != null) {
+            p.setContent(req.getContent());
+        }
+        if (req.getImages() != null) {
+            p.setImages(req.getImages());
+        }
+        if (req.getVideos() != null) {
+            p.setVideos(req.getVideos());
+        }
+        if (req.getIsDev() != null) {
+            p.setIsDev(req.getIsDev());
+        }
+        if (req.getDevTags() != null) {
+            p.setDevTags(req.getDevTags());
+        }
     }
 
     // seq 기반 수정
     @Transactional
-    public void updateBySeq(Long seq, PostUpdateRequest req) {
+    public void updateBySeq(@NonNull Long seq, @NonNull PostUpdateRequest req) {
         Post p = getPostBySeqOrThrow(seq);
-        update(p.getPostUuid(), req);
+        update(requirePostUuid(p), req);
     }
 
     // 삭제
     @Transactional
-    public void delete(String uuid) {
+    public void delete(@NonNull String uuid) {
         if (!postRepository.existsById(uuid)) {
             throw new EntityNotFoundException("Post not found: " + uuid);
         }
@@ -175,22 +195,13 @@ public class PostService {
 
     // seq 기반 삭제
     @Transactional
-    public void deleteBySeq(Long seq) {
+    public void deleteBySeq(@NonNull Long seq) {
         Post p = getPostBySeqOrThrow(seq);
-        delete(p.getPostUuid());
-    }
-
-    private String formatTag(Post p) {
-        if (Boolean.TRUE.equals(p.getIsDev())) {
-            return (p.getDevTags() != null && !p.getDevTags().isBlank())
-                    ? "개발(" + p.getDevTags() + ")"
-                    : "개발";
-        }
-        return "일반";
+        delete(requirePostUuid(p));
     }
 
     @Transactional
-    public boolean toggleLike(String userUuid, String postUuid) {
+    public boolean toggleLike(@NonNull String userUuid, @NonNull String postUuid) {
         Post post = getPostByUuidOrThrow(postUuid);
 
         boolean alreadyLiked = postLikeRepository.existsByUserUuidAndPostUuid(userUuid, postUuid);
@@ -206,7 +217,7 @@ public class PostService {
                     .userUuid(userUuid)
                     .postUuid(postUuid)
                     .build();
-            postLikeRepository.save(like);
+            postLikeRepository.save(Objects.requireNonNull(like));
 
             post.setLikes(post.getLikes() + 1);
             return true; // 좋아요 눌림
@@ -216,14 +227,14 @@ public class PostService {
 
     // seq 기반 좋아요 토글
     @Transactional
-    public boolean toggleLikeBySeq(String userUuid, Long seq) {
+    public boolean toggleLikeBySeq(@NonNull String userUuid, @NonNull Long seq) {
         Post p = getPostBySeqOrThrow(seq);
-        return toggleLike(userUuid, p.getPostUuid());
+        return toggleLike(userUuid, requirePostUuid(p));
     }
 
     // 좋아요 id로 취소(또는 검사) 처리
     @Transactional
-    public void deleteLikeById(Long likeId, String userUuid) {
+    public void deleteLikeById(@NonNull Long likeId, @NonNull String userUuid) {
         PostLike like = postLikeRepository.findById(likeId)
                 .orElseThrow(() -> new IllegalArgumentException("Like not found: " + likeId));
 
@@ -231,7 +242,8 @@ public class PostService {
             throw new AccessDeniedException("본인의 좋아요만 취소할 수 있습니다.");
         }
 
-        Post post = postRepository.findById(like.getPostUuid())
+        String postUuid = Objects.requireNonNull(like.getPostUuid(), "postUuid is required");
+        Post post = postRepository.findById(postUuid)
                 .orElseThrow(() -> new EntityNotFoundException("Post not found: " + like.getPostUuid()));
 
         // 좋아요 삭제

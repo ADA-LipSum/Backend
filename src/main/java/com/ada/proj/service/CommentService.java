@@ -3,10 +3,12 @@ package com.ada.proj.service;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.lang.NonNull;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -53,11 +55,12 @@ public class CommentService {
 
     /** 댓글 생성 */
     @Transactional
-    public CommentResponse createComment(CommentCreateRequest request) {
+    public CommentResponse createComment(@NonNull CommentCreateRequest request) {
 
         User user = getCurrentUser();
 
-        Post post = postRepository.findById(request.getPostId())
+        String postId = Objects.requireNonNull(request.getPostId(), "postId is required");
+        Post post = postRepository.findById(postId)
                 .orElseThrow(() -> new RuntimeException("Post not found"));
 
         Comment comment = new Comment();
@@ -73,8 +76,9 @@ public class CommentService {
         comment.setPost(post);
 
         // 대댓글
-        if (request.getParentId() != null) {
-            Comment parent = commentRepository.findById(request.getParentId())
+        Long parentId = request.getParentId();
+        if (parentId != null) {
+            Comment parent = commentRepository.findById(parentId)
                     .orElseThrow(() -> new RuntimeException("Parent comment not found"));
             comment.setParent(parent);
         }
@@ -93,7 +97,7 @@ public class CommentService {
 
     /** 댓글 조회 (작성자 이름 + 프로필 이미지 포함) */
     @Transactional(readOnly = true)
-    public List<CommentResponse> getCommentsByPost(String postId) {
+    public List<CommentResponse> getCommentsByPost(@NonNull String postId) {
 
         Post post = postRepository.findById(postId)
                 .orElseThrow(() -> new RuntimeException("Post not found"));
@@ -121,7 +125,7 @@ public class CommentService {
 
     /** 댓글 수정 */
     @Transactional
-    public CommentResponse updateComment(Long commentId, CommentUpdateRequest req) {
+    public CommentResponse updateComment(@NonNull Long commentId, @NonNull CommentUpdateRequest req) {
 
         User currentUser = getCurrentUser();
 
@@ -141,7 +145,7 @@ public class CommentService {
 
     /** 댓글 삭제 */
     @Transactional
-    public void deleteComment(Long commentId) {
+    public void deleteComment(@NonNull Long commentId) {
 
         User currentUser = getCurrentUser();
 
@@ -160,7 +164,7 @@ public class CommentService {
 
     /** 댓글 좋아요 토글 */
     @Transactional
-    public Map<String, Object> toggleLike(Long commentId) {
+    public Map<String, Object> toggleLike(@NonNull Long commentId) {
 
         User currentUser = getCurrentUser();
 
@@ -173,15 +177,15 @@ public class CommentService {
         boolean liked;
 
         if (existing.isPresent()) {
-            commentLikeRepository.delete(existing.get());
+            commentLikeRepository.delete(Objects.requireNonNull(existing.get()));
             comment.setLikes(comment.getLikes() - 1);
             liked = false;
         } else {
-            CommentLike like = CommentLike.builder()
+                CommentLike like = CommentLike.builder()
                     .comment(comment)
                     .user(currentUser)
                     .build();
-            commentLikeRepository.save(like);
+                commentLikeRepository.save(Objects.requireNonNull(like));
             comment.setLikes(comment.getLikes() + 1);
             liked = true;
         }
@@ -197,7 +201,7 @@ public class CommentService {
 
     /** 댓글 고정 토글 */
     @Transactional
-    public Map<String, Object> toggleFixed(Long commentId) {
+    public Map<String, Object> toggleFixed(@NonNull Long commentId) {
 
         User currentUser = getCurrentUser();
 
