@@ -109,7 +109,9 @@ public class SecurityConfig {
         configuration.setExposedHeaders(List.of("Authorization", "Content-Disposition", "Location", "X-Request-Id"));
         configuration.setAllowedOrigins(List.of(
                 "http://localhost:5173/",
-                "http://3.38.107.119:8080/"
+                "http://3.38.107.119:8080/",
+                "http://3.38.107.119:8080/*",
+                "http://localhost:5173/*"
         ));
         configuration.setAllowCredentials(true);
 
