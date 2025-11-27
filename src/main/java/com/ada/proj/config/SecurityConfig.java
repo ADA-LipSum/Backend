@@ -107,6 +107,11 @@ public class SecurityConfig {
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setAllowCredentials(false);
         configuration.setExposedHeaders(List.of("Authorization", "Content-Disposition", "Location", "X-Request-Id"));
+        configuration.setAllowedOrigins(List.of(
+                "http://localhost:5173/",
+                "http://3.38.107.119:8080/"
+        ));
+        configuration.setAllowCredentials(true);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
