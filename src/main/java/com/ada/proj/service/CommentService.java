@@ -39,6 +39,7 @@ public class CommentService {
     private final PostRepository postRepository;
     private final UserRepository userRepository;
     private final CommentLikeRepository commentLikeRepository;
+    private final UserBanService userBanService;
 
     private User getCurrentUser() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -58,6 +59,8 @@ public class CommentService {
     public CommentResponse createComment(@NonNull CommentCreateRequest request) {
 
         User user = getCurrentUser();
+
+        userBanService.checkUserBanned(user);
 
         String postId = Objects.requireNonNull(request.getPostId(), "postId is required");
         Post post = postRepository.findById(postId)

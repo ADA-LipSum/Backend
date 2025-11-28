@@ -47,15 +47,15 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-            .cors(cors -> {})
+                .cors(cors -> {})
                 .csrf(csrf -> csrf.disable())
-            .httpBasic(httpBasic -> httpBasic.disable())
-            .formLogin(form -> form.disable())
+                .httpBasic(httpBasic -> httpBasic.disable())
+                .formLogin(form -> form.disable())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-            .exceptionHandling(ex -> ex
-                .authenticationEntryPoint(restAuthenticationEntryPoint)
-                .accessDeniedHandler(restAccessDeniedHandler)
-            )
+                .exceptionHandling(ex -> ex
+                        .authenticationEntryPoint(restAuthenticationEntryPoint)
+                        .accessDeniedHandler(restAccessDeniedHandler)
+                )
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
                                 "/auth/**",
@@ -73,15 +73,15 @@ public class SecurityConfig {
                         // CORS Preflight
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers(
-                            "/api/trade/items/**",
-                            "/api/trade/items/search"
+                                "/api/trade/items/**",
+                                "/api/trade/items/search"
                         ).permitAll()
-                    // 회원/권한 조회는 공개(읽기 전용)
-                    .requestMatchers(HttpMethod.GET, "/users").permitAll()
-                    .requestMatchers(HttpMethod.GET, "/users/*").permitAll()
-                    .requestMatchers(HttpMethod.GET, "/roles", "/roles/*").permitAll()
-                    // 권한 변경 등 관리자 전용 엔드포인트
-                    .requestMatchers("/users/*/role").hasRole("ADMIN")
+                        // 회원/권한 조회는 공개(읽기 전용)
+                        .requestMatchers(HttpMethod.GET, "/users").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/users/*").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/roles", "/roles/*").permitAll()
+                        // 권한 변경 등 관리자 전용 엔드포인트
+                        .requestMatchers("/users/*/role").hasRole("ADMIN")
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)

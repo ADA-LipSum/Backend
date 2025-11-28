@@ -35,6 +35,7 @@ public class PostService {
     private final PostRepository postRepository;
     private final UserRepository userRepository;
     private final PostLikeRepository postLikeRepository;
+    private final UserBanService userBanService;
 
     private @NonNull
     String requirePostUuid(Post post) {
@@ -67,6 +68,7 @@ public class PostService {
         if (writerUuid != null && !writerUuid.isBlank()) {
             User writerUser = userRepository.findByUuid(writerUuid).orElse(null);
             if (writerUser != null) {
+                userBanService.checkUserBanned(writerUser);
                 writerName = writerUser.isUseNickname()
                         ? writerUser.getUserNickname()
                         : writerUser.getUserRealname();
