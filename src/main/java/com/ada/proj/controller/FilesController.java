@@ -16,7 +16,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 @RestController
 @RequestMapping("/api/files")
-@Tag(name = "Files", description = "이미지/영상 파일 업로드 API")
+@Tag(name = "파일 업로드", description = "이미지/영상 파일을 업로드하고 URL을 반환하는 API")
 public class FilesController {
 
     private final FileStorageService fileStorageService;

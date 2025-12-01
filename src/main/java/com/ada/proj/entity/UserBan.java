@@ -32,9 +32,10 @@ public class UserBan {
     private String reason;
 
     @Column(name = "banned_at", nullable = false)
-    private LocalDateTime bannedAt;   // 자동 저장
+    private LocalDateTime bannedAt;   // UTC 기준 저장
 
-    private LocalDateTime expiresAt;
+    @Column(name = "expires_at")
+    private LocalDateTime expiresAt;  // UTC 기준 저장
 
     @Column(nullable = false)
     @Builder.Default

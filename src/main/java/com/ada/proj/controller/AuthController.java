@@ -28,7 +28,7 @@ import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/auth")
-@Tag(name = "로그인/인증")
+@Tag(name = "로그인/인증", description = "로그인, 토큰 재발급, 로그아웃 등 인증 관련 API")
 public class AuthController {
 
     private final AuthService authService;

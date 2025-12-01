@@ -39,7 +39,7 @@ import lombok.RequiredArgsConstructor;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/posts")
-@Tag(name = "게시물")
+@Tag(name = "게시물", description = "게시물 CRUD, 파일 업로드, 좋아요 등 게시판 기능 API")
 public class PostController {
 
     private final PostService postService;

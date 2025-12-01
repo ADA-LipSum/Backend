@@ -19,7 +19,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 
 @RestController
 @RequestMapping
-@Tag(name = "권한 관리")
+@Tag(name = "권한 관리", description = "역할 목록 및 역할별 사용자 조회 API")
 public class RoleController {
 
     private final UserService userService;

@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping
-@Tag(name = "Health Check")
+@Tag(name = "서비스 상태", description = "헬스 체크 및 최근 로그 요약 제공 API")
 public class HealthController {
 
     private final HealthLogService healthLogService;

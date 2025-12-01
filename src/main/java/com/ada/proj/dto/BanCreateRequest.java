@@ -9,6 +9,7 @@ import lombok.Setter;
 
 @Getter
 @Setter
+@Deprecated(since = "2025-12-01", forRemoval = true)
 public class BanCreateRequest {
 
     @Schema(description = "제재 대상 유저 UUID", example = "zzzzzzzz-zzzz-zzzz-zzzz-zzzzzzzzzzzz")
@@ -21,5 +22,5 @@ public class BanCreateRequest {
             description = "제재 만료 시간 (null이면 영구 제재)",
             example = "2025-12-01T12:00:00"
     )
-    private LocalDateTime expiresAt;  // String → LocalDateTime
+    private LocalDateTime expiresAt;  // 더 이상 사용하지 않음. duration 기반 BanRequest 사용
 }

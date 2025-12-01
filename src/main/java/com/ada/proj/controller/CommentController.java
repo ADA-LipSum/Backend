@@ -24,7 +24,7 @@ import lombok.RequiredArgsConstructor;
 @RestController
 @RequestMapping("/api/comments")
 @RequiredArgsConstructor
-@Tag(name = "댓글")
+@Tag(name = "댓글", description = "댓글 작성/조회/수정/삭제 및 좋아요·고정 기능 API")
 public class CommentController {
 
     private final CommentService commentService;

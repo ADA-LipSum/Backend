@@ -3,6 +3,7 @@ package com.ada.proj.entity;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
@@ -35,6 +36,9 @@ public class Comment {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    @Column(name = "comment_uuid", length = 36, nullable = false, unique = true)
+    private String commentUuid;
 
     // 댓글 본문
     @Column(nullable = false, length = 500)
@@ -92,6 +96,9 @@ public class Comment {
         LocalDateTime now = LocalDateTime.now();
         createdAt = now;
         updatedAt = now;
+        if (commentUuid == null) {
+            commentUuid = UUID.randomUUID().toString();
+        }
     }
 
     @PreUpdate
