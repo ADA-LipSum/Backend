@@ -1,14 +1,16 @@
 package com.ada.proj.controller;
 
-import com.ada.proj.dto.ApiResponse;
-import com.ada.proj.dto.HealthLogResponse;
-import com.ada.proj.service.HealthLogService;
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+
+import com.ada.proj.dto.ApiResponse;
+import com.ada.proj.dto.HealthLogResponse;
+import com.ada.proj.service.HealthLogService;
+
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 
 @RestController
 @RequestMapping
@@ -24,10 +26,13 @@ public class HealthController {
     @GetMapping("api/health")
     @Operation(summary = "로그 기반 헬스체크: 최근 로그 요약 반환")
     public ResponseEntity<ApiResponse<HealthLogResponse>> health() {
+        long start = System.nanoTime();
         var summary = healthLogService.summarize(10);
+        long pingMs = (System.nanoTime() - start) / 1_000_000L;
         String status = summary.errorCount() > 0 ? "DEGRADED" : "UP";
         HealthLogResponse body = HealthLogResponse.builder()
                 .status(status)
+                .pingMs(pingMs)
                 .lastLogAt(summary.lastLogAt())
                 .warnCount(summary.warnCount())
                 .errorCount(summary.errorCount())
