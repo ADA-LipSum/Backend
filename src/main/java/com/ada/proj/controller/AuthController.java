@@ -45,9 +45,8 @@ public class AuthController {
             @Parameter(description = "로그인 요청 바디")
             @Valid @RequestBody LoginRequest request) {
         LoginResponse res = authService.login(request);
-        // refreshToken 은 HttpOnly 쿠키로 전달하고, 응답 바디에는 제거
+        // refreshToken 을 HttpOnly 쿠키와 응답 바디 모두로 전달
         String refresh = res.getRefreshToken();
-        res.setRefreshToken(null);
         ResponseCookie cookie = ResponseCookie.from("refreshToken", refresh)
                 .httpOnly(true)
                 .secure(true)
@@ -67,7 +66,6 @@ public class AuthController {
             @Valid @RequestBody LoginRequest request) {
         LoginResponse res = authService.swaggerLogin(request);
         String refresh = res.getRefreshToken();
-        res.setRefreshToken(null);
         ResponseCookie cookie = ResponseCookie.from("refreshToken", refresh)
                 .httpOnly(true)
                 .secure(true)
@@ -88,7 +86,6 @@ public class AuthController {
         req.setPassword("adminadmin1234");
         LoginResponse res = authService.swaggerLogin(req);
         String refresh = res.getRefreshToken();
-        res.setRefreshToken(null);
         ResponseCookie cookie = ResponseCookie.from("refreshToken", refresh)
                 .httpOnly(true)
                 .secure(true)
@@ -109,7 +106,6 @@ public class AuthController {
             @Valid @RequestBody LoginRequest request) {
         LoginResponse res = authService.login(request);
         String refresh = res.getRefreshToken();
-        res.setRefreshToken(null);
         ResponseCookie cookie = ResponseCookie.from("refreshToken", refresh)
                 .httpOnly(true)
                 .secure(true)
@@ -130,7 +126,6 @@ public class AuthController {
             @Valid @RequestBody LoginRequest request) {
         LoginResponse res = authService.login(request);
         String refresh = res.getRefreshToken();
-        res.setRefreshToken(null);
         ResponseCookie cookie = ResponseCookie.from("refreshToken", refresh)
                 .httpOnly(true)
                 .secure(true)
@@ -157,7 +152,6 @@ public class AuthController {
         req.setRefreshToken(token);
         LoginResponse res = authService.reissue(req);
         String refresh = res.getRefreshToken();
-        res.setRefreshToken(null);
         ResponseCookie cookie = ResponseCookie.from("refreshToken", refresh)
                 .httpOnly(true)
                 .secure(true)
