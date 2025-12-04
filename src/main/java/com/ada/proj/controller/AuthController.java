@@ -5,7 +5,6 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.CookieValue;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -139,13 +138,12 @@ public class AuthController {
     }
 
     @PostMapping("/reissue")
-    @Operation(summary = "토큰 재발급", description = "Refresh Token으로 Access/Refresh 재발급")
+    @Operation(summary = "토큰 재발급", description = "Request Body의 Refresh Token으로 Access/Refresh 재발급")
     public ResponseEntity<ApiResponse<LoginResponse>> reissue(
-            @Parameter(description = "토큰 재발급: 쿠키(refreshToken) 우선, 없으면 바디 사용")
-            @CookieValue(value = "refreshToken", required = false) String refreshCookie,
-            @Valid @RequestBody(required = false) TokenReissueRequest request) {
-        String token = refreshCookie != null && !refreshCookie.isBlank() ? refreshCookie : (request == null ? null : request.getRefreshToken());
-        if (token == null) {
+            @Parameter(description = "바디에서 전달된 refreshToken 사용")
+            @Valid @RequestBody TokenReissueRequest request) {
+        String token = request.getRefreshToken();
+        if (token == null || token.isBlank()) {
             return ResponseEntity.badRequest().body(ApiResponse.errorWithData("MISSING_REFRESH", "missing refresh token", null));
         }
         TokenReissueRequest req = new TokenReissueRequest();
