@@ -136,4 +136,4 @@ class StudyGroupServiceIntegrationTests {
         var jr = joinRequestRepository.findByGroup_GroupUuidAndUserUuid(groupUuid, applicant.getUuid()).orElseThrow();
         assertThat(jr.getStatus().name()).isEqualTo("CANCELED");
     }
-}
+} 
