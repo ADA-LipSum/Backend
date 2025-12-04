@@ -35,9 +35,9 @@ public class SecurityConfig {
     private final RestAccessDeniedHandler restAccessDeniedHandler;
 
     public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter,
-                          RequestLoggingFilter requestLoggingFilter,
-                          RestAuthenticationEntryPoint restAuthenticationEntryPoint,
-                          RestAccessDeniedHandler restAccessDeniedHandler) {
+            RequestLoggingFilter requestLoggingFilter,
+            RestAuthenticationEntryPoint restAuthenticationEntryPoint,
+            RestAccessDeniedHandler restAccessDeniedHandler) {
         this.jwtAuthenticationFilter = jwtAuthenticationFilter;
         this.requestLoggingFilter = requestLoggingFilter;
         this.restAuthenticationEntryPoint = restAuthenticationEntryPoint;
@@ -47,42 +47,45 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-                .cors(cors -> {})
+                .cors(cors -> {
+                })
                 .csrf(csrf -> csrf.disable())
                 .httpBasic(httpBasic -> httpBasic.disable())
                 .formLogin(form -> form.disable())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .exceptionHandling(ex -> ex
-                        .authenticationEntryPoint(restAuthenticationEntryPoint)
-                        .accessDeniedHandler(restAccessDeniedHandler)
+                .authenticationEntryPoint(restAuthenticationEntryPoint)
+                .accessDeniedHandler(restAccessDeniedHandler)
                 )
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers(
-                                "/auth/**",
-                                "/health",
-                                "/api/health",
-                                "/v3/api-docs",
-                                "/v3/api-docs/**",
-                                "/swagger-ui/**",
-                                "/swagger-ui.html",
-                                "/files/**",
-                                "/tools/**",
-                                "/api/posts",
-                                "/api/posts/view"
-                        ).permitAll()
-                        // CORS Preflight
-                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                        .requestMatchers(
-                                "/api/trade/items/**",
-                                "/api/trade/items/search"
-                        ).permitAll()
-                        // 회원/권한 조회는 공개(읽기 전용)
-                        .requestMatchers(HttpMethod.GET, "/users").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/users/*").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/roles", "/roles/*").permitAll()
-                        // 권한 변경 등 관리자 전용 엔드포인트
-                        .requestMatchers("/users/*/role").hasRole("ADMIN")
-                        .anyRequest().authenticated()
+                .requestMatchers(
+                        "/auth/**",
+                        "/health",
+                        "/api/health",
+                        "/v3/api-docs",
+                        "/v3/api-docs/**",
+                        "/swagger-ui/**",
+                        "/swagger-ui.html",
+                        "/files/**",
+                        "/tools/**",
+                        "/api/posts",
+                        "/api/posts/view"
+                ).permitAll()
+                // CORS Preflight
+                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                .requestMatchers(
+                        "/api/trade/items/**",
+                        "/api/trade/items/search"
+                ).permitAll()
+                // 스터디 그룹 공개 검색/상세는 공개(GET만)
+                .requestMatchers(HttpMethod.GET, "/api/studies/**").permitAll()
+                // 회원/권한 조회는 공개(읽기 전용)
+                .requestMatchers(HttpMethod.GET, "/users").permitAll()
+                .requestMatchers(HttpMethod.GET, "/users/*").permitAll()
+                .requestMatchers(HttpMethod.GET, "/roles", "/roles/*").permitAll()
+                // 권한 변경 등 관리자 전용 엔드포인트
+                .requestMatchers("/users/*/role").hasRole("ADMIN")
+                .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
                 .addFilterAfter(requestLoggingFilter, JwtAuthenticationFilter.class);
@@ -103,7 +106,7 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
         configuration.setAllowedOriginPatterns(List.of("*")); // ngrok 등 외부 도메인 허용
-        configuration.setAllowedMethods(List.of("GET","POST","PUT","PATCH","DELETE","OPTIONS"));
+        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setAllowCredentials(false);
         configuration.setExposedHeaders(List.of("Authorization", "Content-Disposition", "Location", "X-Request-Id"));

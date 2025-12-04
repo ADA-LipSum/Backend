@@ -49,3 +49,6 @@ logs/
 # Ignore all contents under uploads but keep placeholder
 uploads/**
 !uploads/.gitkeep
+
+# Ignore locally generated tech overview
+docs/TECH_OVERVIEW.md
