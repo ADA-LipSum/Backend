@@ -33,20 +33,23 @@ public class AuthController {
     private final UserService userService;
     private final RefreshTokenRepository refreshTokenRepository;
 
-    public AuthController(AuthService authService, UserService userService, RefreshTokenRepository refreshTokenRepository) {
+    public AuthController(
+            AuthService authService,
+            UserService userService,
+            RefreshTokenRepository refreshTokenRepository
+    ) {
         this.authService = authService;
         this.userService = userService;
         this.refreshTokenRepository = refreshTokenRepository;
     }
 
-    // HttpOnly refreshToken 쿠키 생성
     private ResponseCookie createCookie(String refreshToken) {
         return ResponseCookie.from("refreshToken", refreshToken)
                 .httpOnly(true)
-                .secure(true)
-                .sameSite("Strict")
+                .secure(false)
+                .sameSite("Lax")
                 .path("/")
-                .maxAge(604800) // 7 days
+                .maxAge(604800)
                 .build();
     }
 
@@ -56,7 +59,6 @@ public class AuthController {
 
         LoginResponse res = authService.login(request);
 
-        // refresh token은 LoginResponse에 없으므로 DB에서 조회
         RefreshToken token = refreshTokenRepository.findByUuid(res.getUuid())
                 .orElseThrow(() -> new RuntimeException("Refresh token not generated"));
 
@@ -69,7 +71,8 @@ public class AuthController {
 
     @PostMapping("/reissue")
     @Operation(summary = "토큰 재발급")
-    public ResponseEntity<ApiResponse<LoginResponse>> reissue(@Valid @RequestBody TokenReissueRequest request) {
+    public ResponseEntity<ApiResponse<LoginResponse>> reissue(
+            @Valid @RequestBody TokenReissueRequest request) {
 
         if (request.getRefreshToken() == null || request.getRefreshToken().isBlank()) {
             return ResponseEntity.badRequest()
@@ -96,8 +99,8 @@ public class AuthController {
 
         ResponseCookie cookie = ResponseCookie.from("refreshToken", "")
                 .httpOnly(true)
-                .secure(true)
-                .sameSite("Strict")
+                .secure(false)
+                .sameSite("Lax")
                 .path("/")
                 .maxAge(0)
                 .build();
@@ -115,8 +118,8 @@ public class AuthController {
 
         ResponseCookie cookie = ResponseCookie.from("refreshToken", "")
                 .httpOnly(true)
-                .secure(true)
-                .sameSite("Strict")
+                .secure(false)
+                .sameSite("Lax")
                 .path("/")
                 .maxAge(0)
                 .build();
