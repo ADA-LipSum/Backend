@@ -9,11 +9,11 @@ public class ProfileLinksRequest {
     @Schema(description = "GitHub 프로필 URL", example = "https://github.com/username")
     private String github;
 
-    @Schema(description = "StackOverflow 프로필 URL", example = "https://stackoverflow.com/users/12345/user")
-    private String stackOverflow;
+    @Schema(description = "Discord 프로필 URL", example = "https://discord.com/users/12345/user")
+    private String discord;
 
-    @Schema(description = "LinkedIn 프로필 URL", example = "https://www.linkedin.com/in/username/")
-    private String linkedin;
+    @Schema(description = "Solved_ac 프로필 URL", example = "https://www.solved_ac.com/in/username/")
+    private String Solved_ac;
 
     // 선택: 연동 여부 (향후 외부 API 연동 시 표시용)
     @Schema(description = "GitHub 연동 여부", example = "true")
