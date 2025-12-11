@@ -1,4 +1,4 @@
-package com.ada.proj.entity;
+package com.ada.proj.enums;
 
 public enum PointChangeType {
     GAIN,

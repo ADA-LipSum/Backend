@@ -10,7 +10,7 @@ import com.ada.proj.dto.TradeLogCreateRequest;
 import com.ada.proj.dto.TradePurchaseRequest;
 import com.ada.proj.entity.TradeItem;
 import com.ada.proj.entity.TradeLog;
-import com.ada.proj.entity.TradeCategory;
+import com.ada.proj.enums.TradeCategory;
 import com.ada.proj.entity.User;
 import com.ada.proj.entity.UserPoints;
 

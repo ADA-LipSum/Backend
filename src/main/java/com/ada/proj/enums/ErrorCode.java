@@ -1,4 +1,4 @@
-package com.ada.proj.dto;
+package com.ada.proj.enums;
 
 /**
  * 프로젝트 전역 에러 코드 정의.

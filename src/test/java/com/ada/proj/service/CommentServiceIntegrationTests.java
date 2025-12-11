@@ -20,7 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.ada.proj.dto.CommentCreateRequest;
 import com.ada.proj.dto.CommentResponse;
 import com.ada.proj.entity.Post;
-import com.ada.proj.entity.Role;
+import com.ada.proj.enums.Role;
 import com.ada.proj.entity.User;
 import com.ada.proj.repository.PostRepository;
 import com.ada.proj.repository.UserRepository;

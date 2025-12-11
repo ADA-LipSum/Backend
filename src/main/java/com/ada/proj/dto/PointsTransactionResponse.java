@@ -2,7 +2,7 @@ package com.ada.proj.dto;
 
 import java.time.Instant;
 
-import com.ada.proj.entity.PointChangeType;
+import com.ada.proj.enums.PointChangeType;
 import com.ada.proj.entity.UserPoints;
 
 import io.swagger.v3.oas.annotations.media.Schema;

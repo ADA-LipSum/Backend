@@ -22,7 +22,7 @@ import com.ada.proj.dto.UpdatePasswordRequest;
 import com.ada.proj.dto.UpdateProfileRequest;
 import com.ada.proj.dto.UserProfileResponse;
 import com.ada.proj.dto.ProfileLinksRequest;
-import com.ada.proj.entity.Role;
+import com.ada.proj.enums.Role;
 import com.ada.proj.entity.User;
 import com.ada.proj.entity.UserData;
 import com.ada.proj.exception.ForbiddenException;
@@ -451,7 +451,3 @@ public class UserService {
         }
     }
 }
-
-
-
-  

@@ -1,6 +1,6 @@
 package com.ada.proj.dto;
 
-import com.ada.proj.entity.Role;
+import com.ada.proj.enums.Role;
 import lombok.Builder;
 import lombok.Data;
 import java.util.List;

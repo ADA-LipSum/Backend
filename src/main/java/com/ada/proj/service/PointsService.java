@@ -9,7 +9,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 
-import com.ada.proj.entity.PointChangeType;
+import com.ada.proj.enums.PointChangeType;
 import com.ada.proj.entity.PointsEventLog;
 import com.ada.proj.entity.PointsUsageHistory;
 import com.ada.proj.entity.UserPoints;

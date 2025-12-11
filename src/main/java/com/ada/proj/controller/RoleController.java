@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.ada.proj.dto.ApiResponse;
-import com.ada.proj.entity.Role;
+import com.ada.proj.enums.Role;
 import com.ada.proj.entity.User;
 import com.ada.proj.service.UserService;
 

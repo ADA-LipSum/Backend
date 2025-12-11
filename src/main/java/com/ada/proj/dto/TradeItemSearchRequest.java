@@ -1,7 +1,7 @@
 //C:\Users\russe\Documents\GitHub\Ada\Back\src\main\java\com\ada\proj\dto\TradeItemSearchRequest.java
 package com.ada.proj.dto;
 
-import com.ada.proj.entity.TradeCategory;
+import com.ada.proj.enums.TradeCategory;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 

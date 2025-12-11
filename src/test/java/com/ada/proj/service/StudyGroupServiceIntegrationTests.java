@@ -2,7 +2,7 @@ package com.ada.proj.service;
 
 import com.ada.proj.dto.StudyGroupCreateRequest;
 import com.ada.proj.dto.StudyJoinRequestResponse;
-import com.ada.proj.entity.Role;
+import com.ada.proj.enums.Role;
 import com.ada.proj.entity.User;
 import com.ada.proj.enums.GroupVisibility;
 import com.ada.proj.repository.StudyGroupMemberRepository;

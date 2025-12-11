@@ -5,7 +5,7 @@ import com.ada.proj.dto.BanInfoResponse;
 import com.ada.proj.dto.BanRequest;
 import com.ada.proj.dto.BanResponse;
 import com.ada.proj.dto.PageResponse;
-import com.ada.proj.entity.Role;
+import com.ada.proj.enums.Role;
 import com.ada.proj.entity.User;
 import com.ada.proj.entity.UserBan;
 import com.ada.proj.enums.DurationUnit;

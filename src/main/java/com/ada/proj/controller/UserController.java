@@ -1,7 +1,7 @@
 package com.ada.proj.controller;
 
 import com.ada.proj.dto.*;
-import com.ada.proj.entity.Role;
+import com.ada.proj.enums.Role;
 import com.ada.proj.entity.User;
 import com.ada.proj.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;

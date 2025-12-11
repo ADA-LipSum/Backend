@@ -1,7 +1,7 @@
 package com.ada.proj.security;
 
 import com.ada.proj.dto.ApiResponse;
-import com.ada.proj.dto.ErrorCode;
+import com.ada.proj.enums.ErrorCode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;

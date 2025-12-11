@@ -2,6 +2,7 @@ package com.ada.proj.entity;
 
 import java.time.Instant;
 
+import com.ada.proj.enums.PointChangeType;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 

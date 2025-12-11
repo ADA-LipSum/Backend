@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import com.ada.proj.dto.ApiResponse;
-import com.ada.proj.dto.ErrorCode;
+import com.ada.proj.enums.ErrorCode;
 
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;

@@ -1,4 +1,3 @@
-// src/main/java/com/ada/proj/dto/ReportCreateRequest.java
 package com.ada.proj.dto;
 
 import com.ada.proj.enums.ReportType;

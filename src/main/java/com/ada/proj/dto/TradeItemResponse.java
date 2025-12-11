@@ -3,7 +3,7 @@ package com.ada.proj.dto;
 import java.time.Instant;
 
 import com.ada.proj.entity.TradeItem;
-import com.ada.proj.entity.TradeCategory;
+import com.ada.proj.enums.TradeCategory;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;

@@ -1,6 +1,6 @@
 package com.ada.proj.dto;
 
-import com.ada.proj.entity.Role;
+import com.ada.proj.enums.Role;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;

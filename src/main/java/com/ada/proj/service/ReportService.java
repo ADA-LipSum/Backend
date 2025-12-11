@@ -4,7 +4,7 @@ import com.ada.proj.dto.PageResponse;
 import com.ada.proj.dto.ReportCreateRequest;
 import com.ada.proj.dto.ReportResponse;
 import com.ada.proj.entity.Report;
-import com.ada.proj.entity.Role;
+import com.ada.proj.enums.Role;
 import com.ada.proj.entity.User;
 import com.ada.proj.enums.ReportStatus;
 import com.ada.proj.enums.ReportType;

@@ -1,6 +1,6 @@
 package com.ada.proj.dto;
 
-import com.ada.proj.entity.Role;
+import com.ada.proj.enums.Role;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import lombok.Builder;

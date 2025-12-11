@@ -9,7 +9,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
-import com.ada.proj.entity.TradeCategory;
+import com.ada.proj.enums.TradeCategory;
 import com.ada.proj.entity.TradeItem;
 import com.ada.proj.entity.TradeLog;
 import com.ada.proj.service.TradeService;
