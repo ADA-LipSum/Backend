@@ -450,4 +450,10 @@ public class UserService {
             return null;
         }
     }
+
+    public boolean isStudent(String uuid) {
+        User user = userRepository.findByUuid(uuid)
+                .orElseThrow(() -> new UserNotFoundException("User not found"));
+        return user.getRole() == Role.STUDENT;
+    }
 }

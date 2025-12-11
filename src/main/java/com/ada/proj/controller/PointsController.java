@@ -1,5 +1,6 @@
 package com.ada.proj.controller;
 
+import com.ada.proj.service.UserService;
 import org.springframework.security.core.Authentication;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
@@ -28,6 +29,7 @@ import lombok.RequiredArgsConstructor;
 public class PointsController {
 
     private final PointsService pointsService;
+    private final UserService userService;
 
     // 현재 잔액 조회: 본인 또는 관리자만 가능
     @GetMapping("/balance/{userUuid}")
@@ -35,7 +37,7 @@ public class PointsController {
         public ApiResponse<PointsBalanceResponse> getBalance(
             @Parameter(description = "대상 사용자 UUID", example = "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx")
             @PathVariable String userUuid, Authentication auth) {
-        ensureSelfOrAdmin(auth, userUuid);
+        ensurePointViewPermission(auth, userUuid);
         int balance = pointsService.getBalance(userUuid);
         return ApiResponse.success(new PointsBalanceResponse(userUuid, balance));
     }
@@ -104,5 +106,38 @@ public class PointsController {
         }
     }
 
-    // 사용 API에서는 토큰 확인이 필요하므로 헬퍼 유지 가능. (현 단계에서는 미사용)
+    private void ensurePointViewPermission(Authentication auth, String targetUuid) {
+        if (auth == null) {
+            throw new SecurityException("Unauthenticated");
+        }
+
+        String currentUuid = auth.getName();
+
+        boolean isAdmin = auth.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+
+        boolean isTeacher = auth.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_TEACHER"));
+
+        boolean isStudent = auth.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_STUDENT"));
+
+        // 관리자 → 모두 허용
+        if (isAdmin) return;
+
+        // 학생 → 자기 자신만
+        if (isStudent) {
+            if (currentUuid.equals(targetUuid)) return;
+            throw new SecurityException("Forbidden: 학생 계정은 자신의 포인트만 조회할 수 있습니다.");
+        }
+
+        // 선생 → 학생 포인트만 가능
+        if (isTeacher) {
+            boolean targetIsStudent = userService.isStudent(targetUuid);
+            if (targetIsStudent) return;
+            throw new SecurityException("Forbidden: 선생님 계정은 학생 포인트만 조회할 수 있습니다.");
+        }
+
+        throw new SecurityException("Forbidden");
+    }
 }
