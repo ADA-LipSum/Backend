@@ -12,15 +12,14 @@ public class ProfileLinksRequest {
     @Schema(description = "Discord 프로필 URL", example = "https://discord.com/users/12345/user")
     private String discord;
 
-    @Schema(description = "Solved_ac 프로필 URL", example = "https://www.solved_ac.com/in/username/")
-    private String Solved_ac;
+    @Schema(description = "linked_in 프로필 URL", example = "https://www.solved_ac.com/in/username/")
+    private String linked_in;
 
-    // 선택: 연동 여부 (향후 외부 API 연동 시 표시용)
     @Schema(description = "GitHub 연동 여부", example = "true")
     private Boolean githubConnected;
 
     @Schema(description = "StackOverflow 연동 여부", example = "false")
-    private Boolean stackOverflowConnected;
+    private Boolean discordConnected;
 
     @Schema(description = "LinkedIn 연동 여부", example = "true")
     private Boolean linkedinConnected;
