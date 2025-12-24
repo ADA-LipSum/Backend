@@ -1,10 +1,13 @@
 package com.ada.proj.controller;
 
-import org.springframework.http.ResponseEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import com.ada.proj.dto.ApiResponse;
 import com.ada.proj.dto.CreateUserRequest;
@@ -13,10 +16,8 @@ import com.ada.proj.dto.LoginRequest;
 import com.ada.proj.dto.LoginResponse;
 import com.ada.proj.dto.TeacherSignupRequest;
 import com.ada.proj.dto.TokenReissueRequest;
-
 import com.ada.proj.entity.RefreshToken;
 import com.ada.proj.repository.RefreshTokenRepository;
-
 import com.ada.proj.service.AuthService;
 import com.ada.proj.service.UserService;
 
@@ -33,23 +34,27 @@ public class AuthController {
     private final UserService userService;
     private final RefreshTokenRepository refreshTokenRepository;
 
+    private final com.ada.proj.config.CookieProperties cookieProperties;
+
     public AuthController(
             AuthService authService,
             UserService userService,
-            RefreshTokenRepository refreshTokenRepository
+            RefreshTokenRepository refreshTokenRepository,
+            com.ada.proj.config.CookieProperties cookieProperties
     ) {
         this.authService = authService;
         this.userService = userService;
         this.refreshTokenRepository = refreshTokenRepository;
+        this.cookieProperties = cookieProperties;
     }
 
     private ResponseCookie createCookie(String refreshToken) {
         return ResponseCookie.from("refreshToken", refreshToken)
-                .httpOnly(true)
-                .secure(false)
-                .sameSite("None")
+                .httpOnly(cookieProperties.isHttpOnly())
+                .secure(cookieProperties.isSecure())
+                .sameSite(cookieProperties.getSameSite())
                 .path("/")
-                .maxAge(604800)
+                .maxAge(cookieProperties.getMaxAge())
                 .build();
     }
 
@@ -98,9 +103,9 @@ public class AuthController {
         authService.logout(authentication.getName());
 
         ResponseCookie cookie = ResponseCookie.from("refreshToken", "")
-                .httpOnly(true)
-                .secure(false)
-                .sameSite("Lax")
+                .httpOnly(cookieProperties.isHttpOnly())
+                .secure(cookieProperties.isSecure())
+                .sameSite(cookieProperties.getSameSite())
                 .path("/")
                 .maxAge(0)
                 .build();
@@ -117,9 +122,9 @@ public class AuthController {
         authService.globalLogout(authentication);
 
         ResponseCookie cookie = ResponseCookie.from("refreshToken", "")
-                .httpOnly(true)
-                .secure(false)
-                .sameSite("Lax")
+                .httpOnly(cookieProperties.isHttpOnly())
+                .secure(cookieProperties.isSecure())
+                .sameSite(cookieProperties.getSameSite())
                 .path("/")
                 .maxAge(0)
                 .build();

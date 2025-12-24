@@ -4,8 +4,6 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -17,8 +15,8 @@ import com.ada.proj.dto.LoginResponse;
 import com.ada.proj.dto.TeacherSignupRequest;
 import com.ada.proj.dto.TokenReissueRequest;
 import com.ada.proj.entity.RefreshToken;
-import com.ada.proj.enums.Role;
 import com.ada.proj.entity.User;
+import com.ada.proj.enums.Role;
 import com.ada.proj.exception.ForbiddenException;
 import com.ada.proj.exception.InvalidCredentialsException;
 import com.ada.proj.exception.TokenExpiredException;
@@ -31,27 +29,26 @@ import com.ada.proj.security.JwtTokenProvider;
 @Transactional
 public class AuthService {
 
-    private static final Logger log = LoggerFactory.getLogger(AuthService.class);
-
     private final UserRepository userRepository;
     private final RefreshTokenRepository refreshTokenRepository;
     private final JwtTokenProvider jwtTokenProvider;
     private final PasswordEncoder passwordEncoder;
 
     public AuthService(UserRepository userRepository,
-                       RefreshTokenRepository refreshTokenRepository,
-                       JwtTokenProvider jwtTokenProvider,
-                       PasswordEncoder passwordEncoder) {
+            RefreshTokenRepository refreshTokenRepository,
+            JwtTokenProvider jwtTokenProvider,
+            PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
         this.refreshTokenRepository = refreshTokenRepository;
         this.jwtTokenProvider = jwtTokenProvider;
         this.passwordEncoder = passwordEncoder;
     }
 
+    @SuppressWarnings("null")
     public LoginResponse login(LoginRequest request) {
 
         User user = findUserForLogin(request.getId());
-        ensurePasswordMatchesAndUpgrade(user, request.getPassword(), request.getId());
+        ensurePasswordMatchesAndUpgrade(user, request.getPassword());
 
         boolean isFirstLogin = user.getLoginCount() == 0L;
         user.setLoginCount(user.getLoginCount() + 1);
@@ -86,10 +83,11 @@ public class AuthService {
                 .build();
     }
 
+    @SuppressWarnings("null")
     public LoginResponse adminLogin(LoginRequest request) {
 
         User user = findUserForLogin(request.getId());
-        ensurePasswordMatchesAndUpgrade(user, request.getPassword(), request.getId());
+        ensurePasswordMatchesAndUpgrade(user, request.getPassword());
 
         if (user.getRole() != Role.ADMIN) {
             throw new InvalidCredentialsException("Invalid id or password");
@@ -127,10 +125,11 @@ public class AuthService {
                 .build();
     }
 
+    @SuppressWarnings("null")
     public LoginResponse teacherLogin(LoginRequest request) {
 
         User user = findUserForLogin(request.getId());
-        ensurePasswordMatchesAndUpgrade(user, request.getPassword(), request.getId());
+        ensurePasswordMatchesAndUpgrade(user, request.getPassword());
 
         if (user.getRole() != Role.TEACHER) {
             throw new InvalidCredentialsException("Invalid id or password");
@@ -168,6 +167,7 @@ public class AuthService {
                 .build();
     }
 
+    @SuppressWarnings("null")
     public LoginResponse reissue(TokenReissueRequest request) {
 
         RefreshToken stored = refreshTokenRepository.findByToken(request.getRefreshToken())
@@ -226,7 +226,9 @@ public class AuthService {
     public User signupTeacher(TeacherSignupRequest req) {
 
         userRepository.findByAdminId(req.getTeacherId())
-                .ifPresent(u -> { throw new IllegalArgumentException("teacherId exists"); });
+                .ifPresent(u -> {
+                    throw new IllegalArgumentException("teacherId exists");
+                });
 
         if (userRepository.existsByCustomId(req.getCustomId())) {
             throw new IllegalArgumentException("customId exists");
@@ -251,7 +253,7 @@ public class AuthService {
                 .orElseThrow(() -> new InvalidCredentialsException("Invalid id or password"));
     }
 
-    private void ensurePasswordMatchesAndUpgrade(User user, String rawPassword, String idForLog) {
+    private void ensurePasswordMatchesAndUpgrade(User user, String rawPassword) {
 
         String stored = user.getPassword();
         String legacy = user.getLegacyCustomPw();
@@ -281,9 +283,13 @@ public class AuthService {
 
     private void setDefaultAvatarIfFirstLogin(User user, boolean isFirstLogin) {
 
-        if (!isFirstLogin) return;
+        if (!isFirstLogin) {
+            return;
+        }
 
-        if (user.getProfileImage() != null && !user.getProfileImage().isBlank()) return;
+        if (user.getProfileImage() != null && !user.getProfileImage().isBlank()) {
+            return;
+        }
 
         String seed = user.getUuid() == null
                 ? java.util.UUID.randomUUID().toString()

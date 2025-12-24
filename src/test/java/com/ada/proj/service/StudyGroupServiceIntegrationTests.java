@@ -1,13 +1,10 @@
 package com.ada.proj.service;
 
-import com.ada.proj.dto.StudyGroupCreateRequest;
-import com.ada.proj.dto.StudyJoinRequestResponse;
-import com.ada.proj.enums.Role;
-import com.ada.proj.entity.User;
-import com.ada.proj.enums.GroupVisibility;
-import com.ada.proj.repository.StudyGroupMemberRepository;
-import com.ada.proj.repository.StudyGroupJoinRequestRepository;
-import com.ada.proj.repository.UserRepository;
+import java.util.List;
+import java.util.Objects;
+import java.util.UUID;
+
+import static org.assertj.core.api.Assertions.assertThat;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
@@ -15,15 +12,19 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
-import java.util.Objects;
-import java.util.UUID;
-
-import static org.assertj.core.api.Assertions.assertThat;
+import com.ada.proj.dto.StudyGroupCreateRequest;
+import com.ada.proj.dto.StudyJoinRequestResponse;
+import com.ada.proj.entity.User;
+import com.ada.proj.enums.GroupVisibility;
+import com.ada.proj.enums.Role;
+import com.ada.proj.repository.StudyGroupJoinRequestRepository;
+import com.ada.proj.repository.StudyGroupMemberRepository;
+import com.ada.proj.repository.UserRepository;
 
 @SpringBootTest
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @Transactional
+@SuppressWarnings("null")
 class StudyGroupServiceIntegrationTests {
 
     @Autowired
@@ -136,4 +137,4 @@ class StudyGroupServiceIntegrationTests {
         var jr = joinRequestRepository.findByGroup_GroupUuidAndUserUuid(groupUuid, applicant.getUuid()).orElseThrow();
         assertThat(jr.getStatus().name()).isEqualTo("CANCELED");
     }
-} 
+}
