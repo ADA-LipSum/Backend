@@ -18,6 +18,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+
 @Getter
 @Setter
 @Builder
@@ -38,6 +39,12 @@ public class SocialAccount {
 
     @Column(name = "provider_id", nullable = false, length = 100)
     private String providerId;
+
+    @Column(name = "provider_login", length = 100)
+    private String providerLogin;
+
+    @Column(name = "provider_profile_url", length = 255)
+    private String providerProfileUrl;
 
     @Column(name = "user_uuid", nullable = false, length = 36)
     private String userUuid;

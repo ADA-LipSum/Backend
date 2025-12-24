@@ -21,6 +21,7 @@ import com.ada.proj.repository.UserRepository;
 import com.ada.proj.security.JwtTokenProvider;
 
 import jakarta.servlet.ServletException;
+import com.ada.proj.entity.SocialAccount;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
@@ -31,15 +32,18 @@ public class GitHubOAuth2SuccessHandler implements AuthenticationSuccessHandler 
     private final RefreshTokenRepository refreshTokenRepository;
     private final JwtTokenProvider jwtTokenProvider;
     private final CookieProperties cookieProperties;
+    private final com.ada.proj.repository.SocialAccountRepository socialAccountRepository;
 
     public GitHubOAuth2SuccessHandler(UserRepository userRepository,
             RefreshTokenRepository refreshTokenRepository,
             JwtTokenProvider jwtTokenProvider,
-            CookieProperties cookieProperties) {
+            CookieProperties cookieProperties,
+            com.ada.proj.repository.SocialAccountRepository socialAccountRepository) {
         this.userRepository = userRepository;
         this.refreshTokenRepository = refreshTokenRepository;
         this.jwtTokenProvider = jwtTokenProvider;
         this.cookieProperties = cookieProperties;
+        this.socialAccountRepository = socialAccountRepository;
     }
 
     @Override
@@ -84,6 +88,27 @@ public class GitHubOAuth2SuccessHandler implements AuthenticationSuccessHandler 
                 .expiresAt(Instant.now().plusMillis(604800000))
                 .build();
         refreshTokenRepository.save(entity);
+
+        // Persist social account linking info so status() reflects connected providers
+        try {
+            String profileUrl = null;
+            if (login != null && !login.isBlank()) {
+                profileUrl = "https://github.com/" + login;
+            }
+
+            SocialAccount sa = socialAccountRepository.findByProviderAndProviderId("github", githubId)
+                    .orElseGet(() -> SocialAccount.builder()
+                    .provider("github")
+                    .providerId(githubId)
+                    .userUuid(user.getUuid())
+                    .build());
+            sa.setProviderLogin(login == null || login.isBlank() ? null : login);
+            sa.setProviderProfileUrl(profileUrl);
+            sa.setUserUuid(user.getUuid());
+            socialAccountRepository.save(sa);
+        } catch (Exception ex) {
+            // non-fatal: do not block authentication on socialAccount persistence failures
+        }
 
         ResponseCookie cookie = ResponseCookie.from("refreshToken", refreshToken)
                 .httpOnly(cookieProperties.isHttpOnly())

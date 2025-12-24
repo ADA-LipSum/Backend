@@ -15,6 +15,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
+import java.util.Optional;
+import java.util.HashMap;
 
 import com.ada.proj.dto.ApiResponse;
 import com.ada.proj.entity.SocialAccount;
@@ -59,6 +61,8 @@ public class AuthSocialController {
         try {
             Map user = rt.getForObject("https://api.github.com/user?access_token={token}", Map.class, req.accessToken);
             String providerId = String.valueOf(user.get("id"));
+            String login = user.getOrDefault("login", "").toString();
+            String htmlUrl = user.getOrDefault("html_url", "").toString();
             // check if provider account already linked to other user
             if (socialAccountRepository.findByProviderAndProviderId("github", providerId).isPresent()) {
                 return ResponseEntity.badRequest().body(ApiResponse.errorWithData("ALREADY_LINKED", "github account already linked", null));
@@ -67,6 +71,8 @@ public class AuthSocialController {
             socialAccountRepository.save(SocialAccount.builder()
                     .provider("github")
                     .providerId(providerId)
+                    .providerLogin(login == null || login.isBlank() ? null : login)
+                    .providerProfileUrl(htmlUrl == null || htmlUrl.isBlank() ? null : htmlUrl)
                     .userUuid(userUuid)
                     .build());
 
@@ -96,27 +102,68 @@ public class AuthSocialController {
         String userUuid = authentication.getName();
         List<SocialAccount> accounts = socialAccountRepository.findByUserUuid(userUuid);
         List<String> providers = accounts.stream().map(SocialAccount::getProvider).collect(Collectors.toList());
-        List<Map<String, Object>> accountInfos = accounts.stream().map(a -> {
-            Map<String, Object> m = new HashMap<>();
-            m.put("provider", a.getProvider());
-            m.put("providerId", a.getProviderId());
-            m.put("createdAt", a.getCreatedAt() == null ? null : a.getCreatedAt().toString());
-            return m;
-        }).collect(Collectors.toList());
+
+        // Build 'links' structure
+        Map<String, Object> links = new HashMap<>();
+
+        Optional<SocialAccount> githubOpt = accounts.stream().filter(a -> "github".equalsIgnoreCase(a.getProvider())).findFirst();
+        boolean githubConnected = githubOpt.isPresent();
+        String githubLink = null;
+        if (githubConnected) {
+            SocialAccount ga = githubOpt.get();
+            if (ga.getProviderProfileUrl() != null) {
+                githubLink = ga.getProviderProfileUrl(); 
+            }else if (ga.getProviderLogin() != null) {
+                githubLink = "https://github.com/" + ga.getProviderLogin(); 
+            }else if (ga.getProviderId() != null) {
+                githubLink = "https://github.com/" + ga.getProviderId();
+            }
+        }
+        links.put("github", githubLink);
+        links.put("githubConnected", githubConnected);
+
+        Optional<SocialAccount> discordOpt = accounts.stream().filter(a -> "discord".equalsIgnoreCase(a.getProvider())).findFirst();
+        boolean discordConnected = discordOpt.isPresent();
+        String discordLink = null;
+        if (discordConnected) {
+            SocialAccount da = discordOpt.get();
+            if (da.getProviderProfileUrl() != null) {
+                discordLink = da.getProviderProfileUrl(); 
+            }else if (da.getProviderId() != null) {
+                discordLink = "https://discord.com/users/" + da.getProviderId();
+            }
+        }
+        links.put("discord", discordLink);
+        links.put("discordConnected", discordConnected);
+
+        Optional<SocialAccount> linkedInOpt = accounts.stream().filter(a -> "linked_in".equalsIgnoreCase(a.getProvider()) || "linkedin".equalsIgnoreCase(a.getProvider())).findFirst();
+        boolean linkedinConnected = linkedInOpt.isPresent();
+        String linkedinLink = null;
+        if (linkedinConnected) {
+            SocialAccount la = linkedInOpt.get();
+            if (la.getProviderProfileUrl() != null) {
+                linkedinLink = la.getProviderProfileUrl(); 
+            }else if (la.getProviderLogin() != null) {
+                linkedinLink = "https://www.linkedin.com/in/" + la.getProviderLogin();
+            }
+        }
+        links.put("linked_in", linkedinLink);
+        links.put("linkedinConnected", linkedinConnected);
 
         User user = userRepository.findByUuid(userUuid).orElse(null);
 
-        return ResponseEntity.ok(ApiResponse.ok(Map.of(
-                "authenticated", true,
-                "uuid", userUuid,
-                "user", user == null ? null : Map.of(
-                                "realname", user.getUserRealname(),
-                                "nickname", user.getUserNickname(),
-                                "profileImage", user.getProfileImage()
-                        ),
-                "providers", providers,
-                "accounts", accountInfos
-        )));
+        Map<String, Object> resp = new HashMap<>();
+        resp.put("authenticated", true);
+        resp.put("uuid", userUuid);
+        resp.put("user", user == null ? null : Map.of(
+                "realname", user.getUserRealname(),
+                "nickname", user.getUserNickname(),
+                "profileImage", user.getProfileImage()
+        ));
+        resp.put("providers", providers);
+        resp.put("links", links);
+
+        return ResponseEntity.ok(ApiResponse.ok(resp));
     }
 
     @GetMapping("/oauth2/redirect/github")
