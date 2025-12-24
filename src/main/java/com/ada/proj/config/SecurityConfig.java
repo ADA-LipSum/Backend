@@ -33,15 +33,18 @@ public class SecurityConfig {
     private final RequestLoggingFilter requestLoggingFilter;
     private final RestAuthenticationEntryPoint restAuthenticationEntryPoint;
     private final RestAccessDeniedHandler restAccessDeniedHandler;
+    private final com.ada.proj.security.GitHubOAuth2SuccessHandler gitHubOAuth2SuccessHandler;
 
     public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter,
             RequestLoggingFilter requestLoggingFilter,
             RestAuthenticationEntryPoint restAuthenticationEntryPoint,
-            RestAccessDeniedHandler restAccessDeniedHandler) {
+            RestAccessDeniedHandler restAccessDeniedHandler,
+            com.ada.proj.security.GitHubOAuth2SuccessHandler gitHubOAuth2SuccessHandler) {
         this.jwtAuthenticationFilter = jwtAuthenticationFilter;
         this.requestLoggingFilter = requestLoggingFilter;
         this.restAuthenticationEntryPoint = restAuthenticationEntryPoint;
         this.restAccessDeniedHandler = restAccessDeniedHandler;
+        this.gitHubOAuth2SuccessHandler = gitHubOAuth2SuccessHandler;
     }
 
     @Bean
@@ -87,6 +90,7 @@ public class SecurityConfig {
                 .requestMatchers("/users/*/role").hasRole("ADMIN")
                 .anyRequest().authenticated()
                 )
+                .oauth2Login(o -> o.successHandler(gitHubOAuth2SuccessHandler))
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
                 .addFilterAfter(requestLoggingFilter, JwtAuthenticationFilter.class);
         return http.build();
