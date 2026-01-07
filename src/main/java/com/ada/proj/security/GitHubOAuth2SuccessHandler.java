@@ -13,12 +13,15 @@ import org.springframework.security.web.authentication.AuthenticationSuccessHand
 import org.springframework.stereotype.Component;
 
 import com.ada.proj.config.CookieProperties;
+import com.ada.proj.dto.ApiResponse;
+import com.ada.proj.dto.LoginResponse;
 import com.ada.proj.entity.RefreshToken;
 import com.ada.proj.entity.User;
 import com.ada.proj.enums.Role;
 import com.ada.proj.repository.RefreshTokenRepository;
 import com.ada.proj.repository.UserRepository;
 import com.ada.proj.security.JwtTokenProvider;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import jakarta.servlet.ServletException;
 import com.ada.proj.entity.SocialAccount;
@@ -33,17 +36,20 @@ public class GitHubOAuth2SuccessHandler implements AuthenticationSuccessHandler 
     private final JwtTokenProvider jwtTokenProvider;
     private final CookieProperties cookieProperties;
     private final com.ada.proj.repository.SocialAccountRepository socialAccountRepository;
+    private final ObjectMapper objectMapper;
 
     public GitHubOAuth2SuccessHandler(UserRepository userRepository,
             RefreshTokenRepository refreshTokenRepository,
             JwtTokenProvider jwtTokenProvider,
             CookieProperties cookieProperties,
-            com.ada.proj.repository.SocialAccountRepository socialAccountRepository) {
+            com.ada.proj.repository.SocialAccountRepository socialAccountRepository,
+            ObjectMapper objectMapper) {
         this.userRepository = userRepository;
         this.refreshTokenRepository = refreshTokenRepository;
         this.jwtTokenProvider = jwtTokenProvider;
         this.cookieProperties = cookieProperties;
         this.socialAccountRepository = socialAccountRepository;
+        this.objectMapper = objectMapper;
     }
 
     @Override
@@ -61,7 +67,10 @@ public class GitHubOAuth2SuccessHandler implements AuthenticationSuccessHandler 
 
         String adminId = "github:" + githubId;
 
-        User user = userRepository.findByAdminId(adminId).orElseGet(() -> {
+        User user = userRepository.findByAdminId(adminId).orElse(null);
+        boolean isFirstLogin = false;
+        if (user == null) {
+            isFirstLogin = true;
             User u = User.builder()
                     .uuid(java.util.UUID.randomUUID().toString())
                     .adminId(adminId)
@@ -72,18 +81,26 @@ public class GitHubOAuth2SuccessHandler implements AuthenticationSuccessHandler 
                     .profileImage(avatar)
                     .role(Role.STUDENT)
                     .build();
-            return userRepository.save(u);
-        });
+            user = userRepository.save(u);
+        }
+
+        // Track login
+        if (!isFirstLogin && user.getLoginCount() == 0L) {
+            isFirstLogin = true;
+        }
+        user.setLoginCount(user.getLoginCount() + 1);
+        user.setLastLoginAt(Instant.now());
 
         // Generate tokens (similar to normal login)
-        String accessToken = jwtTokenProvider.generateAccessToken(user.getUuid(), user.getRole().name());
-        String refreshToken = jwtTokenProvider.generateRefreshToken(user.getUuid(), user.getRole().name());
+        final String userUuid = user.getUuid();
+        String accessToken = jwtTokenProvider.generateAccessToken(userUuid, user.getRole().name());
+        String refreshToken = jwtTokenProvider.generateRefreshToken(userUuid, user.getRole().name());
 
         // Save refresh token into DB (replace existing)
-        refreshTokenRepository.findByUuid(user.getUuid()).ifPresent(rt -> refreshTokenRepository.deleteByUuid(user.getUuid()));
+        refreshTokenRepository.findByUuid(userUuid).ifPresent(rt -> refreshTokenRepository.deleteByUuid(userUuid));
 
         RefreshToken entity = RefreshToken.builder()
-                .uuid(user.getUuid())
+                .uuid(userUuid)
                 .token(refreshToken)
                 .expiresAt(Instant.now().plusMillis(604800000))
                 .build();
@@ -100,11 +117,11 @@ public class GitHubOAuth2SuccessHandler implements AuthenticationSuccessHandler 
                     .orElseGet(() -> SocialAccount.builder()
                     .provider("github")
                     .providerId(githubId)
-                    .userUuid(user.getUuid())
+                    .userUuid(userUuid)
                     .build());
             sa.setProviderLogin(login == null || login.isBlank() ? null : login);
             sa.setProviderProfileUrl(profileUrl);
-            sa.setUserUuid(user.getUuid());
+            sa.setUserUuid(userUuid);
             socialAccountRepository.save(sa);
         } catch (Exception ex) {
             // non-fatal: do not block authentication on socialAccount persistence failures
@@ -120,7 +137,21 @@ public class GitHubOAuth2SuccessHandler implements AuthenticationSuccessHandler 
 
         response.setHeader(HttpHeaders.SET_COOKIE, cookie.toString());
 
-        // Redirect to frontend (root). Adjust if you want to send accessToken via query (not recommended).
-        response.sendRedirect("/");
+        // Return JSON for API-style callback (Swagger-friendly)
+        LoginResponse body = LoginResponse.builder()
+                .tokenType("Bearer")
+                .accessToken(accessToken)
+                .expiresIn(900_000)
+                .uuid(userUuid)
+                .role(user.getRole())
+                .userRealname(user.getUserRealname())
+                .userNickname(user.getUserNickname())
+                .profileImage(user.getProfileImage())
+                .firstLogin(isFirstLogin)
+                .build();
+
+        response.setStatus(200);
+        response.setContentType("application/json;charset=UTF-8");
+        response.getWriter().write(objectMapper.writeValueAsString(ApiResponse.ok(body)));
     }
 }

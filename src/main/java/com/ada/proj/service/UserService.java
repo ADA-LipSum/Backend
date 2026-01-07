@@ -25,9 +25,11 @@ import com.ada.proj.dto.ProfileLinksRequest;
 import com.ada.proj.enums.Role;
 import com.ada.proj.entity.User;
 import com.ada.proj.entity.UserData;
+import com.ada.proj.entity.SocialAccount;
 import com.ada.proj.exception.ForbiddenException;
 import com.ada.proj.exception.UnauthenticatedException;
 import com.ada.proj.exception.UserNotFoundException;
+import com.ada.proj.repository.SocialAccountRepository;
 import com.ada.proj.repository.UserDataRepository;
 import com.ada.proj.repository.UserRepository;
 import com.ada.proj.service.FileStorageService.StoredFile;
@@ -42,17 +44,20 @@ public class UserService {
 
     private final UserRepository userRepository;
     private final UserDataRepository userDataRepository;
+    private final SocialAccountRepository socialAccountRepository;
     private final PasswordEncoder passwordEncoder;
     private final FileStorageService fileStorageService;
     private final ObjectMapper objectMapper;
 
     public UserService(UserRepository userRepository,
             UserDataRepository userDataRepository,
+            SocialAccountRepository socialAccountRepository,
             PasswordEncoder passwordEncoder,
             FileStorageService fileStorageService,
             ObjectMapper objectMapper) {
         this.userRepository = userRepository;
         this.userDataRepository = userDataRepository;
+        this.socialAccountRepository = socialAccountRepository;
         this.passwordEncoder = passwordEncoder;
         this.fileStorageService = fileStorageService;
         this.objectMapper = objectMapper;
@@ -77,6 +82,35 @@ public class UserService {
         ProfileLinksRequest links = null;
         if (ud != null && ud.getLinks() != null) {
             links = parseLinks(ud.getLinks());
+        }
+
+        // Overlay actual social connection status from social_accounts
+        try {
+            var accounts = socialAccountRepository.findByUserUuid(uuid);
+            SocialAccount github = accounts.stream()
+                    .filter(a -> a.getProvider() != null && a.getProvider().equalsIgnoreCase("github"))
+                    .findFirst()
+                    .orElse(null);
+            if (github != null) {
+                if (links == null) {
+                    links = new ProfileLinksRequest();
+                }
+                links.setGithubConnected(true);
+                String githubLink = github.getProviderProfileUrl();
+                if ((githubLink == null || githubLink.isBlank()) && github.getProviderLogin() != null && !github.getProviderLogin().isBlank()) {
+                    githubLink = "https://github.com/" + github.getProviderLogin();
+                }
+                if ((githubLink == null || githubLink.isBlank()) && github.getProviderId() != null && !github.getProviderId().isBlank()) {
+                    githubLink = "https://github.com/" + github.getProviderId();
+                }
+                if (githubLink != null && !githubLink.isBlank()) {
+                    links.setGithub(githubLink);
+                }
+            } else if (links != null) {
+                links.setGithubConnected(false);
+            }
+        } catch (Exception ignored) {
+            // non-fatal
         }
 
         return UserProfileResponse.builder()
@@ -171,6 +205,31 @@ public class UserService {
             links = parseLinks(ud.getLinks());
         }
 
+        // Overlay GitHub connected status
+        try {
+            var accounts = socialAccountRepository.findByUserUuid(uuid);
+            SocialAccount github = accounts.stream()
+                    .filter(a -> a.getProvider() != null && a.getProvider().equalsIgnoreCase("github"))
+                    .findFirst()
+                    .orElse(null);
+            if (github != null) {
+                if (links == null) {
+                    links = new ProfileLinksRequest();
+                }
+                links.setGithubConnected(true);
+                String githubLink = github.getProviderProfileUrl();
+                if ((githubLink == null || githubLink.isBlank()) && github.getProviderLogin() != null && !github.getProviderLogin().isBlank()) {
+                    githubLink = "https://github.com/" + github.getProviderLogin();
+                }
+                if (githubLink != null && !githubLink.isBlank()) {
+                    links.setGithub(githubLink);
+                }
+            } else if (links != null) {
+                links.setGithubConnected(false);
+            }
+        } catch (Exception ignored) {
+        }
+
         return UserProfileResponse.builder()
                 .uuid(user.getUuid())
                 .adminId(user.getAdminId())
@@ -211,6 +270,31 @@ public class UserService {
         ProfileLinksRequest links = null;
         if (ud != null && ud.getLinks() != null) {
             links = parseLinks(ud.getLinks());
+        }
+
+        // Overlay GitHub connected status
+        try {
+            var accounts = socialAccountRepository.findByUserUuid(uuid);
+            SocialAccount github = accounts.stream()
+                    .filter(a -> a.getProvider() != null && a.getProvider().equalsIgnoreCase("github"))
+                    .findFirst()
+                    .orElse(null);
+            if (github != null) {
+                if (links == null) {
+                    links = new ProfileLinksRequest();
+                }
+                links.setGithubConnected(true);
+                String githubLink = github.getProviderProfileUrl();
+                if ((githubLink == null || githubLink.isBlank()) && github.getProviderLogin() != null && !github.getProviderLogin().isBlank()) {
+                    githubLink = "https://github.com/" + github.getProviderLogin();
+                }
+                if (githubLink != null && !githubLink.isBlank()) {
+                    links.setGithub(githubLink);
+                }
+            } else if (links != null) {
+                links.setGithubConnected(false);
+            }
+        } catch (Exception ignored) {
         }
 
         return UserProfileResponse.builder()

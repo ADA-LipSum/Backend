@@ -20,9 +20,9 @@ import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import com.ada.proj.security.JwtAuthenticationFilter;
+import com.ada.proj.security.RequestLoggingFilter;
 import com.ada.proj.security.RestAccessDeniedHandler;
 import com.ada.proj.security.RestAuthenticationEntryPoint;
-import com.ada.proj.security.RequestLoggingFilter;
 
 @Configuration
 @EnableWebSecurity
@@ -63,6 +63,9 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                 .requestMatchers(
                         "/auth/**",
+                        "/api/auth/**",
+                        "/oauth2/**",
+                        "/login/oauth2/**",
                         "/health",
                         "/api/health",
                         "/v3/api-docs",
@@ -90,7 +93,9 @@ public class SecurityConfig {
                 .requestMatchers("/users/*/role").hasRole("ADMIN")
                 .anyRequest().authenticated()
                 )
-                .oauth2Login(o -> o.successHandler(gitHubOAuth2SuccessHandler))
+                .oauth2Login(o -> o
+                .redirectionEndpoint(re -> re.baseUri("/api/auth/*/callback"))
+                .successHandler(gitHubOAuth2SuccessHandler))
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
                 .addFilterAfter(requestLoggingFilter, JwtAuthenticationFilter.class);
         return http.build();
