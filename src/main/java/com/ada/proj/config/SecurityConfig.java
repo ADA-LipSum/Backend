@@ -69,6 +69,7 @@ public class SecurityConfig {
                 .requestMatchers(
                         "/auth/**",
                         "/api/auth/**",
+                        "/api/github/callback",
                         "/oauth2/**",
                         "/login/oauth2/**",
                         "/health",

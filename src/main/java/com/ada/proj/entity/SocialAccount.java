@@ -11,13 +11,13 @@ import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-
 
 @Getter
 @Setter
@@ -49,7 +49,20 @@ public class SocialAccount {
     @Column(name = "user_uuid", nullable = false, length = 36)
     private String userUuid;
 
+    @Column(name = "access_token_enc", length = 2048)
+    private String accessTokenEnc;
+
+    @Column(name = "token_scope", length = 255)
+    private String tokenScope;
+
+    @Column(name = "connected_at")
+    private Instant connectedAt;
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
+
+    @UpdateTimestamp
+    @Column(name = "updated_at", nullable = false)
+    private Instant updatedAt;
 }

@@ -13,5 +13,7 @@ public interface SocialAccountRepository extends JpaRepository<SocialAccount, Lo
 
     List<SocialAccount> findByUserUuid(String userUuid);
 
+    Optional<SocialAccount> findByUserUuidAndProvider(String userUuid, String provider);
+
     void deleteByUserUuidAndProvider(String userUuid, String provider);
 }
