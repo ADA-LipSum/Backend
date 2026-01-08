@@ -2,7 +2,9 @@
 set -e
 
 echo "Pulling latest changes..."
-git pull origin main
+git fetch origin main
+git checkout main
+git reset --hard origin/main
 
 echo "Building project..."
 ./gradlew clean build -x test
