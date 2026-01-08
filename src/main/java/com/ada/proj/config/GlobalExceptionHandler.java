@@ -9,6 +9,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import com.ada.proj.dto.ApiResponse;
 import com.ada.proj.enums.ErrorCode;
@@ -18,6 +19,7 @@ import jakarta.servlet.http.HttpServletRequest;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
     private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
     @ExceptionHandler(IllegalArgumentException.class)
@@ -70,11 +72,11 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler({InvalidCredentialsException.class, TokenInvalidException.class, TokenExpiredException.class})
     public ResponseEntity<ApiResponse<Void>> handleAuthFailures(RuntimeException e, HttpServletRequest req) {
-        String code =
-                e instanceof InvalidCredentialsException ? ErrorCode.INVALID_PASSWORD.name() :
-                        e instanceof TokenExpiredException ? ErrorCode.TOKEN_EXPIRED.name() :
-                                e instanceof TokenInvalidException ? ErrorCode.TOKEN_INVALID.name() :
-                                        ErrorCode.AUTH_FAILURE.name();
+        String code
+                = e instanceof InvalidCredentialsException ? ErrorCode.INVALID_PASSWORD.name()
+                        : e instanceof TokenExpiredException ? ErrorCode.TOKEN_EXPIRED.name()
+                                : e instanceof TokenInvalidException ? ErrorCode.TOKEN_INVALID.name()
+                                        : ErrorCode.AUTH_FAILURE.name();
         logWarn(e, req, 401, code);
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                 .body(ApiResponse.error(code, e.getMessage()));
@@ -95,6 +97,13 @@ public class GlobalExceptionHandler {
         logWarn(e, req, 403, ErrorCode.USER_BANNED.name());
         return ResponseEntity.status(HttpStatus.FORBIDDEN)
                 .body(ApiResponse.error(ErrorCode.USER_BANNED.name(), e.getMessage()));
+    }
+
+    @ExceptionHandler(NoResourceFoundException.class)
+    public ResponseEntity<ApiResponse<Void>> handleNoResourceFound(NoResourceFoundException e, HttpServletRequest req) {
+        logWarn(e, req, 404, ErrorCode.NOT_FOUND.name());
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(ApiResponse.error(ErrorCode.NOT_FOUND.name(), "Not found"));
     }
 
     @ExceptionHandler(Exception.class)

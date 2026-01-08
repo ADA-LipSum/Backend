@@ -18,16 +18,20 @@ import org.springframework.web.client.RestTemplate;
 import java.util.Optional;
 import java.util.HashMap;
 
+import org.springframework.beans.factory.ObjectProvider;
 import com.ada.proj.dto.ApiResponse;
+import com.ada.proj.enums.ErrorCode;
 import com.ada.proj.entity.SocialAccount;
 import com.ada.proj.entity.User;
 import com.ada.proj.repository.SocialAccountRepository;
 import com.ada.proj.repository.UserRepository;
 
 import jakarta.validation.constraints.NotBlank;
+import org.springframework.http.HttpStatus;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import io.swagger.v3.oas.annotations.media.Schema;
+import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 
 @RestController
 @RequestMapping("/auth")
@@ -36,10 +40,26 @@ public class AuthSocialController {
 
     private final SocialAccountRepository socialAccountRepository;
     private final UserRepository userRepository;
+    private final ObjectProvider<ClientRegistrationRepository> clientRegistrationRepositoryProvider;
 
-    public AuthSocialController(SocialAccountRepository socialAccountRepository, UserRepository userRepository) {
+    public AuthSocialController(SocialAccountRepository socialAccountRepository,
+            UserRepository userRepository,
+            ObjectProvider<ClientRegistrationRepository> clientRegistrationRepositoryProvider) {
         this.socialAccountRepository = socialAccountRepository;
         this.userRepository = userRepository;
+        this.clientRegistrationRepositoryProvider = clientRegistrationRepositoryProvider;
+    }
+
+    private boolean isGithubOAuthConfigured() {
+        ClientRegistrationRepository repo = clientRegistrationRepositoryProvider.getIfAvailable();
+        if (repo == null) {
+            return false;
+        }
+        try {
+            return repo.findByRegistrationId("github") != null;
+        } catch (Exception ignored) {
+            return true;
+        }
     }
 
     public static class LinkRequest {
@@ -112,10 +132,10 @@ public class AuthSocialController {
         if (githubConnected) {
             SocialAccount ga = githubOpt.get();
             if (ga.getProviderProfileUrl() != null) {
-                githubLink = ga.getProviderProfileUrl(); 
-            }else if (ga.getProviderLogin() != null) {
-                githubLink = "https://github.com/" + ga.getProviderLogin(); 
-            }else if (ga.getProviderId() != null) {
+                githubLink = ga.getProviderProfileUrl();
+            } else if (ga.getProviderLogin() != null) {
+                githubLink = "https://github.com/" + ga.getProviderLogin();
+            } else if (ga.getProviderId() != null) {
                 githubLink = "https://github.com/" + ga.getProviderId();
             }
         }
@@ -128,8 +148,8 @@ public class AuthSocialController {
         if (discordConnected) {
             SocialAccount da = discordOpt.get();
             if (da.getProviderProfileUrl() != null) {
-                discordLink = da.getProviderProfileUrl(); 
-            }else if (da.getProviderId() != null) {
+                discordLink = da.getProviderProfileUrl();
+            } else if (da.getProviderId() != null) {
                 discordLink = "https://discord.com/users/" + da.getProviderId();
             }
         }
@@ -142,8 +162,8 @@ public class AuthSocialController {
         if (linkedinConnected) {
             SocialAccount la = linkedInOpt.get();
             if (la.getProviderProfileUrl() != null) {
-                linkedinLink = la.getProviderProfileUrl(); 
-            }else if (la.getProviderLogin() != null) {
+                linkedinLink = la.getProviderProfileUrl();
+            } else if (la.getProviderLogin() != null) {
                 linkedinLink = "https://www.linkedin.com/in/" + la.getProviderLogin();
             }
         }
@@ -167,7 +187,12 @@ public class AuthSocialController {
     }
 
     @GetMapping("/oauth2/redirect/github")
-    public ResponseEntity<Void> redirectToGitHub() {
+    public ResponseEntity<?> redirectToGitHub() {
+        if (!isGithubOAuthConfigured()) {
+            return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
+                    .body(ApiResponse.error(ErrorCode.OAUTH_NOT_CONFIGURED.name(),
+                            "GitHub OAuth2 설정이 서버에 없습니다. (prod 프로필/GT_CLIENT_ID/GT_CLIENT_SECRET 확인)"));
+        }
         HttpHeaders headers = new HttpHeaders();
         headers.add("Location", "/oauth2/authorization/github");
         return ResponseEntity.status(302).headers(headers).build();
