@@ -26,8 +26,17 @@ import com.ada.proj.security.OAuthStateSigner;
 import com.ada.proj.security.TokenCrypto;
 import com.ada.proj.service.github.GitHubApiClient;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
+
 @RestController
 @RequestMapping("/api/github")
+@Tag(name = "GitHub 연동", description = "기존 계정에 GitHub를 연동하고, 연동된 토큰으로 contribution 데이터를 조회하는 API")
 public class GitHubLinkController {
 
     private final GitHubOAuthProperties gitHubOAuthProperties;
@@ -48,9 +57,17 @@ public class GitHubLinkController {
         this.tokenCrypto = tokenCrypto;
     }
 
-    /**
-     * Start GitHub OAuth linking flow. Requires our JWT (existing account).
-     */
+    @Operation(
+            summary = "GitHub 연동 시작(Authorize로 리다이렉트)",
+            description = "이미 로그인된(관리자 발급 계정) 사용자만 GitHub를 연동할 수 있습니다.\n"
+            + "이 엔드포인트는 GitHub OAuth Authorize URL로 302 리다이렉트합니다.\n"
+            + "프론트에서 직접 GitHub 토큰을 받지 않으며, 콜백(/api/github/callback)에서 백엔드가 code→token 교환을 수행합니다.",
+            security = @SecurityRequirement(name = "bearerAuth"))
+    @ApiResponses({
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "302", description = "GitHub 로그인/동의 화면으로 이동 (Location 헤더)", content = @Content),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "인증 필요(JWT 누락/만료)", content = @Content(schema = @Schema(implementation = ApiResponse.class))),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "서버 설정 누락(client-id/redirect-uri 등)", content = @Content)
+    })
     @GetMapping("/link")
     public ResponseEntity<?> link(Authentication authentication) {
         if (authentication == null || authentication.getName() == null) {
@@ -77,15 +94,24 @@ public class GitHubLinkController {
         return ResponseEntity.status(302).headers(headers).build();
     }
 
-    /**
-     * GitHub OAuth callback for linking. This endpoint must be publicly
-     * accessible.
-     */
+    @Operation(
+            summary = "GitHub 연동 콜백(code/state 처리)",
+            description = "GitHub OAuth authorize 완료 후 GitHub가 redirect하는 콜백 엔드포인트입니다.\n"
+            + "브라우저가 이 URL로 들어오며, 서버는 code를 access token으로 교환하고(백엔드에서만 처리),\n"
+            + "연동 정보를 DB에 저장한 뒤 성공/실패 redirect URL로 다시 302 이동합니다.\n"
+            + "주의: 실무에서는 Swagger에서 직접 호출하지 않고, /api/github/link 플로우로만 진입합니다.")
+    @ApiResponses({
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "302", description = "성공/실패 redirect (Location 헤더)", content = @Content)
+    })
     @GetMapping("/callback")
     public ResponseEntity<?> callback(
+            @Parameter(description = "GitHub가 발급한 Authorization Code", example = "0a1b2c3d4e5f6g7h")
             @RequestParam(name = "code", required = false) String code,
+            @Parameter(description = "CSRF 방지용 state(서명 포함). /api/github/link가 생성", example = "<signed-state>")
             @RequestParam(name = "state", required = false) String state,
+            @Parameter(description = "GitHub 에러 코드(사용자가 동의 취소 등)", example = "access_denied")
             @RequestParam(name = "error", required = false) String error,
+            @Parameter(description = "GitHub 에러 상세 설명", example = "The user denied the request")
             @RequestParam(name = "error_description", required = false) String errorDescription) {
 
         String successRedirect = gitHubOAuthProperties.getSuccessRedirect();
@@ -146,9 +172,23 @@ public class GitHubLinkController {
         return redirect(successRedirect, "linked=github");
     }
 
+    @Operation(
+            summary = "GitHub Contribution 그래프 데이터 조회",
+            description = "연동된 GitHub 계정의 contribution 데이터를 조회해 프론트가 그릴 수 있는 형태로 반환합니다.\n"
+            + "토큰은 프론트에 노출하지 않으며, DB에 암호화 저장된 토큰을 복호화하여 GitHub GraphQL(contributionsCollection)을 호출합니다.\n"
+            + "from/to 미지정 시 기본값은 to=오늘(UTC), from=to-365일 입니다.",
+            security = @SecurityRequirement(name = "bearerAuth"))
+    @ApiResponses({
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "조회 성공", content = @Content(schema = @Schema(implementation = ApiResponse.class))),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "GitHub 미연동/토큰 누락/로그인(login) 누락", content = @Content(schema = @Schema(implementation = ApiResponse.class))),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "인증 필요(JWT 누락/만료)", content = @Content(schema = @Schema(implementation = ApiResponse.class))),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "502", description = "GitHub GraphQL 응답 파싱 실패/일시 오류", content = @Content(schema = @Schema(implementation = ApiResponse.class)))
+    })
     @GetMapping("/contributions")
     public ResponseEntity<?> contributions(Authentication authentication,
+            @Parameter(description = "조회 시작일(YYYY-MM-DD). 미지정 시 to-365일", example = "2025-01-01")
             @RequestParam(name = "from", required = false) String from,
+            @Parameter(description = "조회 종료일(YYYY-MM-DD). 미지정 시 오늘(UTC)", example = "2026-01-01")
             @RequestParam(name = "to", required = false) String to) {
         if (authentication == null || authentication.getName() == null) {
             return ResponseEntity.status(401).body(ApiResponse.error("UNAUTH", "unauthenticated"));

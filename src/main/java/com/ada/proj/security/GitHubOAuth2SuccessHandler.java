@@ -69,7 +69,7 @@ public class GitHubOAuth2SuccessHandler implements AuthenticationSuccessHandler 
             response.setContentType("application/json;charset=UTF-8");
             response.getWriter().write(objectMapper.writeValueAsString(
                     ApiResponse.error("SOCIAL_NOT_LINKED",
-                            "연동되지 않은 GitHub 계정입니다. 먼저 관리자 계정으로 로그인 후 /auth/link/github 로 연동하세요.")));
+                            "연동되지 않은 GitHub 계정입니다. 먼저 관리자 계정으로 로그인 후 /api/github/link 로 연동해주세요.")));
             return;
         }
 
@@ -87,9 +87,6 @@ public class GitHubOAuth2SuccessHandler implements AuthenticationSuccessHandler 
         boolean isFirstLogin = user.getLoginCount() == 0L;
 
         // Track login
-        if (!isFirstLogin && user.getLoginCount() == 0L) {
-            isFirstLogin = true;
-        }
         user.setLoginCount(user.getLoginCount() + 1);
         user.setLastLoginAt(Instant.now());
 

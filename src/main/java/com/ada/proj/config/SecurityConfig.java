@@ -28,6 +28,7 @@ import com.ada.proj.security.RestAuthenticationEntryPoint;
 
 @Configuration
 @EnableWebSecurity
+
 @EnableMethodSecurity
 public class SecurityConfig {
 
@@ -69,6 +70,7 @@ public class SecurityConfig {
                 .requestMatchers(
                         "/auth/**",
                         "/api/auth/**",
+                        "/api/github/login",
                         "/api/github/callback",
                         "/oauth2/**",
                         "/login/oauth2/**",
