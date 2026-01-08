@@ -20,4 +20,7 @@
             password: ${{ secrets.SERVER_PASSWORD }}
             script: |
               cd /home/ec2-user/ada/Back
+              git fetch origin main
+              git checkout main
+              git reset --hard origin/main
               bash ./run.sh
