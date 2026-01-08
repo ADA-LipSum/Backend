@@ -85,19 +85,15 @@ public class SecurityConfig {
                         "/api/posts",
                         "/api/posts/view"
                 ).permitAll()
-                // CORS Preflight
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                 .requestMatchers(
                         "/api/trade/items/**",
                         "/api/trade/items/search"
                 ).permitAll()
-                // 스터디 그룹 공개 검색/상세는 공개(GET만)
                 .requestMatchers(HttpMethod.GET, "/api/studies/**").permitAll()
-                // 회원/권한 조회는 공개(읽기 전용)
                 .requestMatchers(HttpMethod.GET, "/users").permitAll()
                 .requestMatchers(HttpMethod.GET, "/users/*").permitAll()
                 .requestMatchers(HttpMethod.GET, "/roles", "/roles/*").permitAll()
-                // 권한 변경 등 관리자 전용 엔드포인트
                 .requestMatchers("/users/*/role").hasRole("ADMIN")
                 .anyRequest().authenticated()
                 )

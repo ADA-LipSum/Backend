@@ -61,7 +61,7 @@ public class GitHubLinkController {
             summary = "GitHub 연동 시작(Authorize로 리다이렉트)",
             description = "이미 로그인된(관리자 발급 계정) 사용자만 GitHub를 연동할 수 있습니다.\n"
             + "이 엔드포인트는 GitHub OAuth Authorize URL로 302 리다이렉트합니다.\n"
-            + "프론트에서 직접 GitHub 토큰을 받지 않으며, 콜백(/api/github/callback)에서 백엔드가 code→token 교환을 수행합니다.",
+            + "프론트에서 직접 GitHub 토큰을 받지 않으며, 콜백(/api/github/callback)에서 백엔드가 code -> token 교환을 수행합니다.",
             security = @SecurityRequirement(name = "bearerAuth"))
     @ApiResponses({
         @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "302", description = "GitHub 로그인/동의 화면으로 이동 (Location 헤더)", content = @Content),
@@ -99,7 +99,7 @@ public class GitHubLinkController {
             description = "GitHub OAuth authorize 완료 후 GitHub가 redirect하는 콜백 엔드포인트입니다.\n"
             + "브라우저가 이 URL로 들어오며, 서버는 code를 access token으로 교환하고(백엔드에서만 처리),\n"
             + "연동 정보를 DB에 저장한 뒤 성공/실패 redirect URL로 다시 302 이동합니다.\n"
-            + "주의: 실무에서는 Swagger에서 직접 호출하지 않고, /api/github/link 플로우로만 진입합니다.")
+            + "주의: Swagger에서 직접 호출하지 않고, /api/github/link 플로우로만 진입합니다.")
     @ApiResponses({
         @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "302", description = "성공/실패 redirect (Location 헤더)", content = @Content)
     })
