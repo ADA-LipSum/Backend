@@ -1,8 +1,5 @@
 package com.ada.proj.config;
 
-import java.nio.file.Path;
-import java.nio.file.Paths;
-
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.lang.NonNull;
@@ -20,12 +17,9 @@ public class FileStorageConfig implements WebMvcConfigurer {
 
     @Override
     public void addResourceHandlers(@NonNull ResourceHandlerRegistry registry) {
-        Path root = Paths.get(baseDir).toAbsolutePath().normalize();
-        String location = root.toUri().toString();
-        // 예: http://host/files/xxxx 로 접근 가능
-        registry.addResourceHandler("/files/**")
-                .addResourceLocations(location)
-                .setCachePeriod(60 * 60) // 1 hour
-                .resourceChain(true);
+        // NOTE:
+        // 기존에는 uploads 디렉토리를 "/files/**"로 정적 서빙했으나, 현재는 업로드 파일을 DB(BLOB)에 저장하고
+        // [PublicFilesController]가 "/files/{folder}/{storedName}"를 스트리밍으로 제공한다.
+        // 디스크 기반 정적 서빙은 민감 파일이 섞일 경우 위험하므로 비활성화한다.
     }
 }

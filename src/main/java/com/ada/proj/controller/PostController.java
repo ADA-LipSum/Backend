@@ -191,7 +191,7 @@ public class PostController {
             @RequestParam("uuid") String uuid,
             @RequestBody PostUpdateRequest req,
             Authentication authentication) {
-        postService.update(requireUuid(uuid), requireUpdateRequest(req));
+        postService.update(requireUuid(uuid), requireUpdateRequest(req), authentication);
         return ResponseEntity.ok(ApiResponse.success());
     }
 
@@ -202,7 +202,7 @@ public class PostController {
             @PathVariable("uuid") String uuid,
             @RequestBody PostUpdateRequest req,
             Authentication authentication) {
-        postService.update(requireUuid(uuid), requireUpdateRequest(req));
+        postService.update(requireUuid(uuid), requireUpdateRequest(req), authentication);
         return ResponseEntity.ok(ApiResponse.success());
     }
 
@@ -214,7 +214,7 @@ public class PostController {
             @PathVariable("seq") Long seq,
             @RequestBody PostUpdateRequest req,
             Authentication authentication) {
-        postService.updateBySeq(requireSeq(seq), requireUpdateRequest(req));
+        postService.updateBySeq(requireSeq(seq), requireUpdateRequest(req), authentication);
         return ResponseEntity.ok(ApiResponse.success());
     }
 
@@ -226,7 +226,7 @@ public class PostController {
             @Parameter(description = "게시글 UUID", example = "post-uuid-...")
             @RequestParam("uuid") String uuid,
             Authentication authentication) {
-        postService.delete(requireUuid(uuid));
+        postService.delete(requireUuid(uuid), authentication);
         return ResponseEntity.ok(ApiResponse.success());
     }
 
@@ -236,7 +236,7 @@ public class PostController {
             @Parameter(description = "게시글 UUID", example = "post-uuid-...")
             @PathVariable("uuid") String uuid,
             Authentication authentication) {
-        postService.delete(requireUuid(uuid));
+        postService.delete(requireUuid(uuid), authentication);
         return ResponseEntity.ok(ApiResponse.success());
     }
 
@@ -247,7 +247,7 @@ public class PostController {
             @Parameter(description = "게시글 seq", example = "123")
             @PathVariable("seq") Long seq,
             Authentication authentication) {
-        postService.deleteBySeq(requireSeq(seq));
+        postService.deleteBySeq(requireSeq(seq), authentication);
         return ResponseEntity.ok(ApiResponse.success());
     }
 

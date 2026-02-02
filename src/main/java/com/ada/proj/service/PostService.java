@@ -9,6 +9,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.lang.NonNull;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -50,6 +51,34 @@ public class PostService {
     private Post getPostBySeqOrThrow(@NonNull Long seq) {
         return postRepository.findBySeq(seq)
                 .orElseThrow(() -> new EntityNotFoundException("Post not found (seq): " + seq));
+    }
+
+    private boolean hasAdminRole(Authentication auth) {
+        if (auth == null || auth.getAuthorities() == null) {
+            return false;
+        }
+        for (GrantedAuthority ga : auth.getAuthorities()) {
+            if (ga != null && "ROLE_ADMIN".equalsIgnoreCase(ga.getAuthority())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private void ensureWriterOrAdmin(Post post, Authentication auth) {
+        if (auth == null || auth.getName() == null || auth.getName().isBlank()) {
+            throw new AccessDeniedException("인증이 필요합니다.");
+        }
+        String requesterUuid = auth.getName();
+        boolean isAdmin = hasAdminRole(auth);
+        String writerUuid = post.getWriterUuid();
+
+        if (isAdmin) {
+            return;
+        }
+        if (writerUuid == null || writerUuid.isBlank() || !writerUuid.equals(requesterUuid)) {
+            throw new AccessDeniedException("작성자 또는 관리자만 수정/삭제할 수 있습니다.");
+        }
     }
 
     // 생성
@@ -156,8 +185,9 @@ public class PostService {
 
     // 수정
     @Transactional
-    public void update(@NonNull String uuid, @NonNull PostUpdateRequest req) {
+    public void update(@NonNull String uuid, @NonNull PostUpdateRequest req, Authentication auth) {
         Post p = getPostByUuidOrThrow(uuid);
+        ensureWriterOrAdmin(p, auth);
 
         if (req.getTitle() != null) {
             p.setTitle(req.getTitle());
@@ -181,25 +211,27 @@ public class PostService {
 
     // seq 기반 수정
     @Transactional
-    public void updateBySeq(@NonNull Long seq, @NonNull PostUpdateRequest req) {
+    public void updateBySeq(@NonNull Long seq, @NonNull PostUpdateRequest req, Authentication auth) {
         Post p = getPostBySeqOrThrow(seq);
-        update(requirePostUuid(p), req);
+        update(requirePostUuid(p), req, auth);
     }
 
     // 삭제
     @Transactional
-    public void delete(@NonNull String uuid) {
+    public void delete(@NonNull String uuid, Authentication auth) {
         if (!postRepository.existsById(uuid)) {
             throw new EntityNotFoundException("Post not found: " + uuid);
         }
+        Post p = getPostByUuidOrThrow(uuid);
+        ensureWriterOrAdmin(p, auth);
         postRepository.deleteById(uuid);
     }
 
     // seq 기반 삭제
     @Transactional
-    public void deleteBySeq(@NonNull Long seq) {
+    public void deleteBySeq(@NonNull Long seq, Authentication auth) {
         Post p = getPostBySeqOrThrow(seq);
-        delete(requirePostUuid(p));
+        delete(requirePostUuid(p), auth);
     }
 
     @Transactional
