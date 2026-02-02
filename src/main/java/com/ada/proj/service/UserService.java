@@ -190,7 +190,8 @@ public class UserService {
         ensureSelfOrAdmin(auth, uuid);
         User user = userRepository.findByUuid(uuid)
                 .orElseThrow(() -> new UserNotFoundException("User not found"));
-        StoredFile saved = fileStorageService.storeImage(file);
+        String uploaderUuid = auth == null ? null : auth.getName();
+        StoredFile saved = fileStorageService.storeImage(file, uploaderUuid);
         user.setProfileImage(saved.url());
         Optional<UserData> userDataOpt = userDataRepository.findByUuid(uuid);
         UserData ud = userDataOpt.orElse(null);
@@ -257,7 +258,8 @@ public class UserService {
         ensureSelfOrAdmin(auth, uuid);
         User user = userRepository.findByUuid(uuid)
                 .orElseThrow(() -> new UserNotFoundException("User not found"));
-        StoredFile saved = fileStorageService.storeImage(file);
+        String uploaderUuid = auth == null ? null : auth.getName();
+        StoredFile saved = fileStorageService.storeImage(file, uploaderUuid);
         user.setProfileBanner(saved.url());
         Optional<UserData> userDataOpt = userDataRepository.findByUuid(uuid);
         UserData ud = userDataOpt.orElse(null);

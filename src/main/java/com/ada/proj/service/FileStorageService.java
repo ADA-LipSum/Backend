@@ -31,14 +31,46 @@ public class FileStorageService {
     }
 
     public StoredFile storeImage(MultipartFile file) throws IOException {
-        return store(file, "images", IMAGE_EXTS);
+        return storeImage(file, null);
     }
 
     public StoredFile storeVideo(MultipartFile file) throws IOException {
-        return store(file, "videos", VIDEO_EXTS);
+        return storeVideo(file, null);
     }
 
-    private StoredFile store(MultipartFile file, String folder, Set<String> allowedExts) throws IOException {
+    public StoredFile storeImage(MultipartFile file, String uploaderUuid) throws IOException {
+        return store(file, "images", IMAGE_EXTS, uploaderUuid);
+    }
+
+    public StoredFile storeVideo(MultipartFile file, String uploaderUuid) throws IOException {
+        return store(file, "videos", VIDEO_EXTS, uploaderUuid);
+    }
+
+    /**
+     * 업로드 파일을 확장자 기반으로 images/videos 중 자동 분류하여 저장합니다. 허용
+     * 확장자(IMAGE_EXTS/VIDEO_EXTS) 외 파일은 거부합니다.
+     */
+    public StoredFile storeAuto(MultipartFile file, String uploaderUuid) throws IOException {
+        if (file == null) {
+            throw new IllegalArgumentException("Empty file");
+        }
+        String originalName = file.getOriginalFilename();
+        if (originalName == null) {
+            originalName = "file";
+        }
+        String original = StringUtils.cleanPath(originalName);
+        String ext = getExtension(original).toLowerCase();
+
+        if (IMAGE_EXTS.contains(ext)) {
+            return store(file, "images", IMAGE_EXTS, uploaderUuid);
+        }
+        if (VIDEO_EXTS.contains(ext)) {
+            return store(file, "videos", VIDEO_EXTS, uploaderUuid);
+        }
+        throw new IllegalArgumentException("Unsupported file extension: ." + ext);
+    }
+
+    private StoredFile store(MultipartFile file, String folder, Set<String> allowedExts, String uploaderUuid) throws IOException {
         if (file == null || file.isEmpty()) {
             throw new IllegalArgumentException("Empty file");
         }
@@ -80,7 +112,7 @@ public class FileStorageService {
                     contentType,
                     size,
                     in,
-                    null
+                    uploaderUuid
             );
         }
 

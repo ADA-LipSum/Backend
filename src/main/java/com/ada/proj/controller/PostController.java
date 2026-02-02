@@ -78,6 +78,7 @@ public class PostController {
             Authentication authentication
     ) throws IOException {
         PostCreateRequest payload = Objects.requireNonNull(data, "data");
+        String uploaderUuid = authentication == null ? null : authentication.getName();
         if (authentication != null) {
             payload.setWriterUuid(authentication.getName());
         }
@@ -88,9 +89,9 @@ public class PostController {
         }
 
         // 단일 files 배열도 허용(이미지/영상 자동 판별). 하위호환: imageFiles, videoFiles 유지
-        appendMixedFiles(payload, files, md);
-        appendImages(payload, imageFiles, md);
-        appendVideos(payload, videoFiles, md);
+        appendMixedFiles(payload, files, md, uploaderUuid);
+        appendImages(payload, imageFiles, md, uploaderUuid);
+        appendVideos(payload, videoFiles, md, uploaderUuid);
 
         payload.setContent(md.toString());
         String uuid = postService.create(payload);
@@ -98,7 +99,7 @@ public class PostController {
                 .body(ApiResponse.success(uuid));
     }
 
-    private void appendMixedFiles(PostCreateRequest data, MultipartFile[] files, StringBuilder md) throws IOException {
+    private void appendMixedFiles(PostCreateRequest data, MultipartFile[] files, StringBuilder md, String uploaderUuid) throws IOException {
         if (files == null) {
             return;
         }
@@ -108,15 +109,12 @@ public class PostController {
             if (f == null || f.isEmpty()) {
                 continue;
             }
-            String ct = f.getContentType();
-            if (ct != null && ct.startsWith("image")) {
-                StoredFile saved = fileStorageService.storeImage(f);
-                if (firstImg == null) {
-                    firstImg = saved.url();
-                }
-                md.append("\n\n![image](").append(saved.url()).append(")\n");
-            } else if (ct != null && ct.startsWith("video")) {
-                StoredFile saved = fileStorageService.storeVideo(f);
+            StoredFile saved = fileStorageService.storeAuto(f, uploaderUuid);
+
+            boolean isVideo = saved.contentType() != null && saved.contentType().startsWith("video/");
+            boolean isImage = saved.contentType() != null && saved.contentType().startsWith("image/");
+
+            if (isVideo) {
                 if (firstVid == null) {
                     firstVid = saved.url();
                 }
@@ -124,12 +122,10 @@ public class PostController {
                         .append(saved.url())
                         .append("\" style=\"max-width:100%\"></video>\n");
             } else {
-                // 타입을 모르면 이미지로 시도(필요시 정책 변경)
-                StoredFile saved = fileStorageService.storeImage(f);
-                if (firstImg == null) {
+                if (firstImg == null && isImage) {
                     firstImg = saved.url();
                 }
-                md.append("\n\n![file](").append(saved.url()).append(")\n");
+                md.append("\n\n![image](").append(saved.url()).append(")\n");
             }
         }
         if (firstImg != null && (data.getImages() == null || data.getImages().isBlank())) {
@@ -140,7 +136,7 @@ public class PostController {
         }
     }
 
-    private void appendImages(PostCreateRequest data, MultipartFile[] imageFiles, StringBuilder md) throws IOException {
+    private void appendImages(PostCreateRequest data, MultipartFile[] imageFiles, StringBuilder md, String uploaderUuid) throws IOException {
         if (imageFiles == null) {
             return;
         }
@@ -149,7 +145,7 @@ public class PostController {
             if (f == null || f.isEmpty()) {
                 continue;
             }
-            StoredFile saved = fileStorageService.storeImage(f);
+            StoredFile saved = fileStorageService.storeImage(f, uploaderUuid);
             if (firstImg == null) {
                 firstImg = saved.url();
             }
@@ -160,7 +156,7 @@ public class PostController {
         }
     }
 
-    private void appendVideos(PostCreateRequest data, MultipartFile[] videoFiles, StringBuilder md) throws IOException {
+    private void appendVideos(PostCreateRequest data, MultipartFile[] videoFiles, StringBuilder md, String uploaderUuid) throws IOException {
         if (videoFiles == null) {
             return;
         }
@@ -169,7 +165,7 @@ public class PostController {
             if (f == null || f.isEmpty()) {
                 continue;
             }
-            StoredFile saved = fileStorageService.storeVideo(f);
+            StoredFile saved = fileStorageService.storeVideo(f, uploaderUuid);
             if (firstVid == null) {
                 firstVid = saved.url();
             }
