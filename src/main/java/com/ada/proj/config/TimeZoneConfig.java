@@ -6,10 +6,6 @@ import java.util.TimeZone;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Configuration;
 
-/**
- * Ensures application-level timestamps consistently use Korea Standard Time
- * (UTC+9).
- */
 @Slf4j
 @Configuration
 public class TimeZoneConfig {

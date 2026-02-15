@@ -52,3 +52,4 @@ uploads/**
 
 # Ignore locally generated tech overview
 docs/TECH_OVERVIEW.md
+/docs

@@ -2,16 +2,17 @@ package com.ada.proj.service;
 
 import java.io.BufferedInputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.util.Set;
 import java.util.UUID;
 
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.ada.proj.repository.UploadedFileJdbcRepository;
+import com.ada.proj.repository.UploadedFileJdbcRepository.FileMeta;
 
 @Service
 public class FileStorageService {
@@ -19,15 +20,17 @@ public class FileStorageService {
     private static final long MAX_FILE_SIZE_BYTES = 500L * 1024 * 1024; // 500MiB
 
     private final UploadedFileJdbcRepository uploadedFileJdbcRepository;
+    private final S3ObjectStorage s3ObjectStorage;
 
     private static final Set<String> IMAGE_EXTS = Set.of("jpg", "jpeg", "png", "gif", "webp", "bmp");
     private static final Set<String> VIDEO_EXTS = Set.of("mp4", "mov", "avi", "mkv", "webm");
 
     public FileStorageService(
             UploadedFileJdbcRepository uploadedFileJdbcRepository,
-            @Value("${app.storage.base-dir:uploads}") String ignoredBaseDir
+            S3ObjectStorage s3ObjectStorage
     ) {
         this.uploadedFileJdbcRepository = uploadedFileJdbcRepository;
+        this.s3ObjectStorage = s3ObjectStorage;
     }
 
     public StoredFile storeImage(MultipartFile file) throws IOException {
@@ -105,18 +108,61 @@ public class FileStorageService {
 
             validateMagicNumber(folder, ext, header);
 
-            uploadedFileJdbcRepository.save(
+            String bucket = s3ObjectStorage.bucket();
+            String key = s3ObjectStorage.buildKey(folder, storedName);
+            s3ObjectStorage.upload(folder, storedName, contentType, size, in);
+
+            uploadedFileJdbcRepository.saveS3Ref(
                     storedName,
                     folder,
                     original,
                     contentType,
                     size,
-                    in,
+                    bucket,
+                    key,
                     uploaderUuid
             );
         }
 
         return new StoredFile(original, storedName, url, size, contentType);
+    }
+
+    public FileMeta getMetaOrThrow(String folder, String storedName) {
+        return uploadedFileJdbcRepository.findMetaOrThrow(folder, storedName);
+    }
+
+    public java.util.List<FileMeta> listByUploader(String uploaderUuid, int limit) {
+        return uploadedFileJdbcRepository.listByUploader(uploaderUuid, limit);
+    }
+
+    public void streamToOrThrow(String folder, String storedName, OutputStream out) {
+        FileMeta meta = uploadedFileJdbcRepository.findMetaOrThrow(folder, storedName);
+
+        if (meta.storageProvider() != null && !meta.storageProvider().equalsIgnoreCase("S3")) {
+            throw new IllegalStateException("Only S3 storage is supported (storage_provider=" + meta.storageProvider() + ")");
+        }
+        if (meta.s3Bucket() == null || meta.s3Key() == null) {
+            throw new IllegalStateException("S3 file meta is missing bucket/key");
+        }
+        s3ObjectStorage.downloadTo(meta.s3Bucket(), meta.s3Key(), out);
+    }
+
+    public void deleteOrThrow(String folder, String storedName) {
+        FileMeta meta = uploadedFileJdbcRepository.findMetaOrThrow(folder, storedName);
+
+        if (meta.storageProvider() != null && !meta.storageProvider().equalsIgnoreCase("S3")) {
+            throw new IllegalStateException("Only S3 storage is supported (storage_provider=" + meta.storageProvider() + ")");
+        }
+        if (meta.s3Bucket() == null || meta.s3Key() == null) {
+            throw new IllegalStateException("S3 file meta is missing bucket/key");
+        }
+
+        s3ObjectStorage.delete(meta.s3Bucket(), meta.s3Key());
+
+        int rows = uploadedFileJdbcRepository.deleteByFolderAndStoredName(folder, storedName);
+        if (rows <= 0) {
+            throw new jakarta.persistence.EntityNotFoundException("File not found: " + folder + "/" + storedName);
+        }
     }
 
     private String normalizeContentType(String folder, String ext, String fallback) {

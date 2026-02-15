@@ -9,16 +9,16 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
-import com.ada.proj.repository.UploadedFileJdbcRepository;
 import com.ada.proj.repository.UploadedFileJdbcRepository.FileMeta;
+import com.ada.proj.service.FileStorageService;
 
 @RestController
 public class PublicFilesController {
 
-    private final UploadedFileJdbcRepository uploadedFileJdbcRepository;
+    private final FileStorageService fileStorageService;
 
-    public PublicFilesController(UploadedFileJdbcRepository uploadedFileJdbcRepository) {
-        this.uploadedFileJdbcRepository = uploadedFileJdbcRepository;
+    public PublicFilesController(FileStorageService fileStorageService) {
+        this.fileStorageService = fileStorageService;
     }
 
     @GetMapping("/files/{folder}/{storedName}")
@@ -31,7 +31,7 @@ public class PublicFilesController {
             return ResponseEntity.notFound().build();
         }
 
-        FileMeta meta = uploadedFileJdbcRepository.findMetaOrThrow(folder, storedName);
+        FileMeta meta = fileStorageService.getMetaOrThrow(folder, storedName);
 
         MediaType mediaType;
         try {
@@ -41,7 +41,7 @@ public class PublicFilesController {
         }
 
         StreamingResponseBody body = outputStream
-                -> uploadedFileJdbcRepository.streamDataOrThrow(folder, storedName, outputStream);
+                -> fileStorageService.streamToOrThrow(folder, storedName, outputStream);
 
         ContentDisposition disposition = ContentDisposition.inline().filename(meta.originalName()).build();
 

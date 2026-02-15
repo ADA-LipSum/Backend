@@ -1,0 +1,128 @@
+spring:
+  application:
+    name: proj
+
+  datasource:
+    url: jdbc:mysql://localhost:3306/defaultdb?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8
+    username: root
+    password: 1234
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      data-source-properties:
+        useUnicode: true
+        characterEncoding: utf8
+      maximum-pool-size: 20
+      minimum-idle: 5
+      idle-timeout: 300000
+      max-lifetime: 1800000
+      keepalive-time: 300000
+      connection-timeout: 5000
+      validation-timeout: 5000
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    open-in-view: false
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQLDialect
+        default_batch_fetch_size: 1000
+        jdbc:
+          time_zone: Asia/Seoul
+          batch_size: 50
+        order_inserts: true
+        order_updates: true
+
+  jackson:
+    time-zone: Asia/Seoul
+
+  devtools:
+    restart:
+      enabled: false
+    add-properties: false
+
+  output:
+    ansi:
+      enabled: always
+
+  servlet:
+    multipart:
+      max-file-size: 500MB
+      max-request-size: 500MB
+      file-size-threshold: 10MB
+      location: uploads/tmp
+
+  web:
+    locale: ko_KR
+    locale-resolver: fixed
+
+  main:
+    lazy-initialization: true
+
+server:
+  port: 8080
+  address: 0.0.0.0
+  forward-headers-strategy: framework
+  servlet:
+    encoding:
+      charset: UTF-8
+      enabled: true
+      force: true
+  tomcat:
+    max-http-form-post-size: 500MB
+    max-swallow-size: 500MB
+    threads:
+      max: 300
+      min-spare: 30
+    accept-count: 200
+
+logging:
+  charset:
+    console: UTF-8
+    file: UTF-8
+  level:
+    root: INFO
+    org:
+      springframework:
+        web: INFO
+      hibernate:
+        SQL: ERROR
+        type:
+          descriptor:
+            sql:
+              BasicBinder: ERROR
+
+jwt:
+  secret: hCB8xQ7mVYF2wzG3JpA9kL5rN2uS8eD1tQ6yZ3mB7cP4vX9sR1aT6uW3qE8nK5bM
+  access-expiration-ms: 900000
+  refresh-expiration-ms: 604800000
+
+app:
+  auto-increment:
+    maintain:
+      enabled: true
+      tables: users,posts,comments,comments_likes,refresh_token,user_data,post_likes,points_usage_history
+      resequence-order: false
+      order-column: order_no
+      resequence-primary:
+        enabled: true
+        tables: refresh_token,post,post_likes,comments,comments_likes,user_ban,user_report
+
+  cookie:
+    http-only: true
+    secure: false
+    same-site: Lax
+    max-age: 604800
+
+  cors:
+    allowed-origin-patterns: http://localhost:*,http://127.0.0.1:*,http://3.38.107.119:*
+
+  # 파일 저장소는 S3만 사용합니다. (파일 데이터는 S3, 메타는 DB)
+  storage:
+    s3:
+      bucket: ${APP_STORAGE_S3_BUCKET:gbsw-s3}
+      region: ${APP_STORAGE_S3_REGION:ap-northeast-2}
+      # key-prefix: ${APP_STORAGE_S3_KEY_PREFIX:}
+      # endpoint: ${APP_STORAGE_S3_ENDPOINT:}
+      # path-style-access: false

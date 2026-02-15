@@ -41,8 +41,20 @@ public class UploadedFile {
     private long sizeBytes;
 
     @Lob
-    @Column(name = "data", columnDefinition = "LONGBLOB", nullable = false)
+    @Column(name = "data", columnDefinition = "LONGBLOB")
     private byte[] data;
+
+    /**
+     * 저장소 타입: DB 또는 S3
+     */
+    @Column(name = "storage_provider", length = 10, nullable = false)
+    private String storageProvider = "DB";
+
+    @Column(name = "s3_bucket", length = 128)
+    private String s3Bucket;
+
+    @Column(name = "s3_key", length = 512)
+    private String s3Key;
 
     @Column(name = "uploader_uuid", length = 64)
     private String uploaderUuid;

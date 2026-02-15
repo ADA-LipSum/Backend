@@ -5,9 +5,6 @@ import java.util.List;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
-/**
- * app.auto-increment.* 설정을 바인딩합니다.
- */
 @Component
 @ConfigurationProperties(prefix = "app.auto-increment")
 public class AutoIncrementProperties {
