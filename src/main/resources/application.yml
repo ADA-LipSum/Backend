@@ -118,7 +118,6 @@ app:
   cors:
     allowed-origin-patterns: http://localhost:*,http://127.0.0.1:*,http://3.38.107.119:*
 
-  # 파일 저장소는 S3만 사용합니다. (파일 데이터는 S3, 메타는 DB)
   storage:
     s3:
       bucket: ${APP_STORAGE_S3_BUCKET:gbsw-s3}

@@ -1,8 +1,6 @@
 package com.ada.proj.repository;
 
 import java.io.InputStream;
-import java.io.OutputStream;
-import java.io.UncheckedIOException;
 import java.sql.PreparedStatement;
 import java.sql.Timestamp;
 import java.time.Instant;
@@ -11,7 +9,6 @@ import java.util.List;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
-import org.springframework.util.StreamUtils;
 
 import jakarta.persistence.EntityNotFoundException;
 import lombok.NonNull;
@@ -37,34 +34,6 @@ public class UploadedFileJdbcRepository {
             String s3Key
             ) {
 
-    }
-
-    public void save(
-            @NonNull String storedName,
-            @NonNull String folder,
-            @NonNull String originalName,
-            @NonNull String contentType,
-            long sizeBytes,
-            @NonNull InputStream dataStream,
-            String uploaderUuid
-    ) {
-        String sql = "INSERT INTO uploaded_files (stored_name, folder, original_name, content_type, size_bytes, data, uploader_uuid, created_at, storage_provider, s3_bucket, s3_key) "
-                + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'DB', NULL, NULL)";
-
-        Instant now = Instant.now();
-
-        jdbcTemplate.update(con -> {
-            PreparedStatement ps = con.prepareStatement(sql);
-            ps.setString(1, storedName);
-            ps.setString(2, folder);
-            ps.setString(3, originalName);
-            ps.setString(4, contentType);
-            ps.setLong(5, sizeBytes);
-            ps.setBinaryStream(6, dataStream, sizeBytes);
-            ps.setString(7, uploaderUuid);
-            ps.setTimestamp(8, Timestamp.from(now));
-            return ps;
-        });
     }
 
     public void saveS3Ref(
@@ -153,40 +122,5 @@ public class UploadedFileJdbcRepository {
                 uploaderUuid,
                 limit
         );
-    }
-
-    public void streamDataOrThrow(@NonNull String folder, @NonNull String storedName, @NonNull OutputStream outputStream) {
-        String sql = "SELECT data FROM uploaded_files WHERE folder = ? AND stored_name = ?";
-
-        Integer rows = jdbcTemplate.query(con -> {
-            PreparedStatement ps = con.prepareStatement(sql);
-            ps.setString(1, folder);
-            ps.setString(2, storedName);
-            return ps;
-        }, rs -> {
-            if (!rs.next()) {
-                return 0;
-            }
-            InputStream in = rs.getBinaryStream(1);
-            if (in == null) {
-                return 0;
-            }
-            try {
-                StreamUtils.copy(in, outputStream);
-            } catch (java.io.IOException io) {
-                throw new UncheckedIOException(io);
-            } finally {
-                try {
-                    in.close();
-                } catch (java.io.IOException ignored) {
-                    // ignore
-                }
-            }
-            return 1;
-        });
-
-        if (rows == null || rows == 0) {
-            throw new EntityNotFoundException("File not found: " + folder + "/" + storedName);
-        }
     }
 }
