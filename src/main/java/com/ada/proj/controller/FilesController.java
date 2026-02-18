@@ -39,12 +39,6 @@ public class FilesController {
         this.s3ObjectStorage = s3ObjectStorage;
     }
 
-    public enum UploadType {
-        auto,
-        image,
-        video
-    }
-
     public record S3ListItem(
             String key,
             Long sizeBytes,
@@ -58,11 +52,9 @@ public class FilesController {
 
     }
 
-    @Operation(summary = "파일 업로드(통합)", description = "이미지/영상 파일을 여러 개 업로드하고 공개 URL 리스트를 반환합니다. type=auto(기본)은 확장자 기반으로 images/videos 자동 분류합니다.")
+    @Operation(summary = "파일 업로드(통합)", description = "이미지/영상 파일을 여러 개 업로드하고 공개 URL 리스트를 반환합니다. 확장자 기반으로 images/videos 자동 분류합니다.")
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ApiResponse<List<StoredFile>>> upload(
-            @Parameter(description = "업로드 타입 (auto/image/video)")
-            @RequestParam(name = "type", required = false, defaultValue = "auto") UploadType type,
             @Parameter(description = "업로드할 파일 배열", required = true)
             @RequestPart("files") MultipartFile[] files,
             Authentication authentication
@@ -77,41 +69,10 @@ public class FilesController {
             if (f == null || f.isEmpty()) {
                 continue;
             }
-            StoredFile saved = switch (type) {
-                case image ->
-                    fileStorageService.storeImage(f, uploaderUuid);
-                case video ->
-                    fileStorageService.storeVideo(f, uploaderUuid);
-                case auto ->
-                    fileStorageService.storeAuto(f, uploaderUuid);
-            };
+            StoredFile saved = fileStorageService.storeAuto(f, uploaderUuid);
             result.add(saved);
         }
         return ResponseEntity.ok(ApiResponse.success(result));
-    }
-
-    @Operation(summary = "이미지 업로드", description = "이미지 파일을 업로드하고 공개 URL을 반환합니다.")
-    @PostMapping(path = "/images", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<ApiResponse<StoredFile>> uploadImage(
-            @Parameter(description = "업로드할 이미지 파일", required = true)
-            @RequestPart("file") MultipartFile file,
-            Authentication authentication
-    ) throws Exception {
-        String uploaderUuid = authentication == null ? null : authentication.getName();
-        StoredFile saved = fileStorageService.storeImage(file, uploaderUuid);
-        return ResponseEntity.ok(ApiResponse.success(saved));
-    }
-
-    @Operation(summary = "영상 업로드", description = "영상 파일을 업로드하고 공개 URL을 반환합니다.")
-    @PostMapping(path = "/videos", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<ApiResponse<StoredFile>> uploadVideo(
-            @Parameter(description = "업로드할 영상 파일", required = true)
-            @RequestPart("file") MultipartFile file,
-            Authentication authentication
-    ) throws Exception {
-        String uploaderUuid = authentication == null ? null : authentication.getName();
-        StoredFile saved = fileStorageService.storeVideo(file, uploaderUuid);
-        return ResponseEntity.ok(ApiResponse.success(saved));
     }
 
     private static boolean hasAdminRole(Authentication auth) {
@@ -139,8 +100,6 @@ public class FilesController {
             @RequestParam(name = "prefix", required = false, defaultValue = "") String prefix,
             @Parameter(description = "(ADMIN 전용) 최대 반환 개수(최대 1000)")
             @RequestParam(name = "maxKeys", required = false, defaultValue = "100") int maxKeys,
-            @Parameter(description = "(일반 사용자) 내 업로드 파일 목록 개수(최대 200)")
-            @RequestParam(name = "limit", required = false, defaultValue = "50") int limit,
             Authentication authentication
     ) {
         ensureAuthenticated(authentication);

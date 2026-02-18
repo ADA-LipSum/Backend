@@ -178,19 +178,6 @@ public class PostController {
         }
     }
 
-    @Deprecated
-    @Hidden
-    @PostMapping("/update")
-    @Operation(summary = "[Deprecated] 수정", description = "PUT /api/posts/{uuid} 사용", security = @SecurityRequirement(name = "bearerAuth"))
-    public ResponseEntity<ApiResponse<Void>> legacyUpdate(
-            @Parameter(description = "게시글 UUID", example = "post-uuid-...")
-            @RequestParam("uuid") String uuid,
-            @RequestBody PostUpdateRequest req,
-            Authentication authentication) {
-        postService.update(requireUuid(uuid), requireUpdateRequest(req), authentication);
-        return ResponseEntity.ok(ApiResponse.success());
-    }
-
     @PutMapping("/{uuid}")
     @Operation(summary = "게시글 수정", description = "title, content, isDev, devTags 선택 수정", security = @SecurityRequirement(name = "bearerAuth"))
     public ResponseEntity<ApiResponse<Void>> update(
@@ -211,18 +198,6 @@ public class PostController {
             @RequestBody PostUpdateRequest req,
             Authentication authentication) {
         postService.updateBySeq(requireSeq(seq), requireUpdateRequest(req), authentication);
-        return ResponseEntity.ok(ApiResponse.success());
-    }
-
-    @Deprecated
-    @Hidden
-    @PostMapping("/delete")
-    @Operation(summary = "[Deprecated] 삭제", description = "DELETE /api/posts/{uuid} 사용", security = @SecurityRequirement(name = "bearerAuth"))
-    public ResponseEntity<ApiResponse<Void>> legacyDelete(
-            @Parameter(description = "게시글 UUID", example = "post-uuid-...")
-            @RequestParam("uuid") String uuid,
-            Authentication authentication) {
-        postService.delete(requireUuid(uuid), authentication);
         return ResponseEntity.ok(ApiResponse.success());
     }
 
@@ -247,16 +222,6 @@ public class PostController {
         return ResponseEntity.ok(ApiResponse.success());
     }
 
-    @Deprecated
-    @Hidden
-    @GetMapping("/view")
-    @Operation(summary = "[Deprecated] 게시글 상세", description = "GET /api/posts/{uuid} 사용")
-    public ResponseEntity<ApiResponse<PostDetailResponse>> legacyDetail(
-            @Parameter(description = "게시글 UUID", example = "post-uuid-...")
-            @RequestParam("uuid") String uuid) {
-        return ResponseEntity.ok(ApiResponse.success(postService.detail(requireUuid(uuid))));
-    }
-
     @GetMapping("/{uuid}")
     @Operation(summary = "게시글 상세 조회", description = "게시글 상세 정보를 조회하고 조회수 증가")
     public ResponseEntity<ApiResponse<PostDetailResponse>> detail(
@@ -274,19 +239,6 @@ public class PostController {
         return ResponseEntity.ok(ApiResponse.success(postService.detailBySeq(requireSeq(seq))));
     }
 
-    @Deprecated
-    @Hidden
-    @GetMapping("/list")
-    @Operation(summary = "[Deprecated] 게시글 목록", description = "GET /api/posts 사용")
-    public ApiResponse<PageResponse<PostSummaryResponse>> legacyList(
-            @Parameter(description = "조회할 페이지 번호", example = "0")
-            @RequestParam(defaultValue = "0") int page,
-            @Parameter(description = "한 페이지에 포함될 게시글 개수", example = "20")
-            @RequestParam(defaultValue = "20") int size
-    ) {
-        return ApiResponse.success(postService.list(page, size));
-    }
-
     @GetMapping
     @Operation(summary = "게시글 목록 조회", description = "page/size 기반 목록 조회")
     public ResponseEntity<ApiResponse<PageResponse<PostSummaryResponse>>> list(
@@ -296,22 +248,6 @@ public class PostController {
             @RequestParam(defaultValue = "20") int size
     ) {
         return ResponseEntity.ok(ApiResponse.success(postService.list(page, size)));
-    }
-
-    @Deprecated
-    @Hidden
-    @PostMapping("/like")
-    @Operation(summary = "[Deprecated] 좋아요 토글", description = "POST /api/posts/{uuid}/like 사용")
-    public ApiResponse<Boolean> legacyToggleLike(
-            @RequestParam String uuid,
-            Authentication auth
-    ) {
-        if (auth == null) {
-            throw new SecurityException("로그인이 필요합니다.");
-        }
-        String principal = Objects.requireNonNull(auth.getName(), "principal");
-        boolean liked = postService.toggleLike(principal, requireUuid(uuid));
-        return ApiResponse.success(liked);
     }
 
     @PostMapping("/{uuid}/like")

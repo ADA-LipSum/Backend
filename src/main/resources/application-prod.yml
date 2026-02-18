@@ -5,7 +5,6 @@ app:
     same-site: None
     max-age: 604800
 
-  # Backend-managed GitHub linking flow (no token exposure to frontend)
   github:
     oauth:
       client-id: ${GT_CLIENT_ID}

@@ -68,7 +68,6 @@ public class SecurityConfig {
                 )
                 .authorizeHttpRequests(auth -> auth
                 .requestMatchers(
-                        "/auth/**",
                         "/api/auth/**",
                         "/api/github/login",
                         "/api/github/callback",
@@ -84,6 +83,13 @@ public class SecurityConfig {
                         "/tools/**",
                         "/api/posts",
                         "/api/posts/view"
+                ).permitAll()
+                .requestMatchers(HttpMethod.GET, "/auth/status").permitAll()
+                .requestMatchers(HttpMethod.POST,
+                        "/auth/login",
+                        "/auth/reissue",
+                        "/auth/signup/teacher",
+                        "/auth/admin/init"
                 ).permitAll()
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                 .requestMatchers(

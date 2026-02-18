@@ -14,6 +14,7 @@ import com.ada.proj.dto.LoginRequest;
 import com.ada.proj.dto.LoginResponse;
 import com.ada.proj.dto.TeacherSignupRequest;
 import com.ada.proj.dto.TokenReissueRequest;
+import com.ada.proj.dto.AuthMeResponse;
 import com.ada.proj.entity.RefreshToken;
 import com.ada.proj.entity.User;
 import com.ada.proj.enums.Role;
@@ -21,6 +22,8 @@ import com.ada.proj.exception.ForbiddenException;
 import com.ada.proj.exception.InvalidCredentialsException;
 import com.ada.proj.exception.TokenExpiredException;
 import com.ada.proj.exception.TokenInvalidException;
+import com.ada.proj.exception.UnauthenticatedException;
+import com.ada.proj.exception.UserNotFoundException;
 import com.ada.proj.repository.RefreshTokenRepository;
 import com.ada.proj.repository.UserRepository;
 import com.ada.proj.security.JwtTokenProvider;
@@ -221,6 +224,28 @@ public class AuthService {
         }
 
         refreshTokenRepository.deleteAll();
+    }
+
+    @Transactional(readOnly = true)
+    public AuthMeResponse me(Authentication authentication) {
+        if (authentication == null || authentication.getName() == null || authentication.getName().isBlank()) {
+            throw new UnauthenticatedException("Unauthenticated");
+        }
+
+        String uuid = authentication.getName();
+        User user = userRepository.findByUuid(uuid)
+                .orElseThrow(() -> new UserNotFoundException("User not found"));
+
+        boolean isFirstLogin = user.getLoginCount() <= 1L;
+
+        return AuthMeResponse.builder()
+                .uuid(user.getUuid())
+                .role(user.getRole())
+                .userRealname(user.getUserRealname())
+                .userNickname(user.getUserNickname())
+                .profileImage(user.getProfileImage())
+                .firstLogin(isFirstLogin)
+                .build();
     }
 
     public User signupTeacher(TeacherSignupRequest req) {
