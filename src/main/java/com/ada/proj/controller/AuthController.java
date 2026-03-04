@@ -27,6 +27,8 @@ import com.ada.proj.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 
 @RestController
@@ -95,14 +97,36 @@ public class AuthController {
     @PostMapping("/reissue")
     @Operation(summary = "토큰 재발급")
     public ResponseEntity<ApiResponse<LoginResponse>> reissue(
-            @Valid @RequestBody TokenReissueRequest request) {
+            HttpServletRequest httpServletRequest,
+            @RequestBody(required = false) TokenReissueRequest request) {
 
-        if (request.getRefreshToken() == null || request.getRefreshToken().isBlank()) {
+        String refreshToken = null;
+
+        // 1) Cookie (HttpOnly refreshToken)
+        refreshToken = extractRefreshTokenFromCookie(httpServletRequest);
+
+        // 2) Authorization: Bearer <refreshToken> (compat)
+        if (refreshToken == null || refreshToken.isBlank()) {
+            refreshToken = extractBearerToken(httpServletRequest);
+        }
+
+        // 3) JSON body { refreshToken }
+        if ((refreshToken == null || refreshToken.isBlank())
+                && request != null
+                && request.getRefreshToken() != null
+                && !request.getRefreshToken().isBlank()) {
+            refreshToken = request.getRefreshToken();
+        }
+
+        if (refreshToken == null || refreshToken.isBlank()) {
             return ResponseEntity.badRequest()
                     .body(ApiResponse.errorWithData("MISSING_REFRESH", "missing refresh token", null));
         }
 
-        LoginResponse res = authService.reissue(request);
+        TokenReissueRequest effectiveRequest = new TokenReissueRequest();
+        effectiveRequest.setRefreshToken(refreshToken);
+
+        LoginResponse res = authService.reissue(effectiveRequest);
 
         RefreshToken token = refreshTokenRepository.findByUuid(res.getUuid())
                 .orElseThrow(() -> new RuntimeException("Refresh token not found"));
@@ -112,6 +136,44 @@ public class AuthController {
         return ResponseEntity.ok()
                 .header(HttpHeaders.SET_COOKIE, cookie.toString())
                 .body(ApiResponse.ok(res));
+    }
+
+    private String extractRefreshTokenFromCookie(HttpServletRequest request) {
+        if (request == null) {
+            return null;
+        }
+
+        Cookie[] cookies = request.getCookies();
+        if (cookies == null || cookies.length == 0) {
+            return null;
+        }
+
+        for (Cookie cookie : cookies) {
+            if (cookie != null && "refreshToken".equals(cookie.getName())) {
+                return cookie.getValue();
+            }
+        }
+
+        return null;
+    }
+
+    private String extractBearerToken(HttpServletRequest request) {
+        if (request == null) {
+            return null;
+        }
+
+        String auth = request.getHeader(HttpHeaders.AUTHORIZATION);
+        if (auth == null || auth.isBlank()) {
+            return null;
+        }
+
+        String prefix = "Bearer ";
+        if (!auth.startsWith(prefix)) {
+            return null;
+        }
+
+        String token = auth.substring(prefix.length()).trim();
+        return token.isBlank() ? null : token;
     }
 
     @PostMapping("/logout")

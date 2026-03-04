@@ -28,6 +28,9 @@ import com.ada.proj.repository.RefreshTokenRepository;
 import com.ada.proj.repository.UserRepository;
 import com.ada.proj.security.JwtTokenProvider;
 
+import io.jsonwebtoken.ExpiredJwtException;
+import io.jsonwebtoken.JwtException;
+
 @Service
 @Transactional
 public class AuthService {
@@ -173,21 +176,39 @@ public class AuthService {
     @SuppressWarnings("null")
     public LoginResponse reissue(TokenReissueRequest request) {
 
-        RefreshToken stored = refreshTokenRepository.findByToken(request.getRefreshToken())
+        String refreshToken = request == null ? null : request.getRefreshToken();
+        if (refreshToken == null || refreshToken.isBlank()) {
+            throw new TokenInvalidException("Invalid refresh token");
+        }
+
+        final String uuid;
+        final String role;
+        try {
+            uuid = jwtTokenProvider.getUuid(refreshToken);
+            role = jwtTokenProvider.getRole(refreshToken);
+        } catch (ExpiredJwtException ex) {
+            throw new TokenExpiredException("Refresh token expired");
+        } catch (JwtException | IllegalArgumentException ex) {
+            throw new TokenInvalidException("Invalid refresh token");
+        }
+
+        RefreshToken stored = refreshTokenRepository.findByUuid(uuid)
                 .orElseThrow(() -> new TokenInvalidException("Invalid refresh token"));
 
         if (stored.getExpiresAt().isBefore(Instant.now())) {
             throw new TokenExpiredException("Refresh token expired");
         }
 
-        String uuid = jwtTokenProvider.getUuid(stored.getToken());
-        String role = jwtTokenProvider.getRole(stored.getToken());
+        if (stored.getToken() == null || !stored.getToken().equals(refreshToken)) {
+            throw new TokenInvalidException("Invalid refresh token");
+        }
 
         String newAccess = jwtTokenProvider.generateAccessToken(uuid, role);
         String newRefresh = jwtTokenProvider.generateRefreshToken(uuid, role);
 
         stored.setToken(newRefresh);
         stored.setExpiresAt(Instant.now().plusMillis(604800000));
+        refreshTokenRepository.save(stored);
 
         User user = userRepository.findByUuid(uuid).orElse(null);
 
