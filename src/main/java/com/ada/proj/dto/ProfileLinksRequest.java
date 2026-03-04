@@ -6,6 +6,7 @@ import lombok.Data;
 @Data
 @Schema(name = "ProfileLinksRequest", description = "프로필 외부 링크/연동 정보")
 public class ProfileLinksRequest {
+
     @Schema(description = "GitHub 프로필 URL", example = "https://github.com/username")
     private String github;
 

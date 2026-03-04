@@ -38,7 +38,7 @@ public class SecurityConfig {
     public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter,
             RequestLoggingFilter requestLoggingFilter,
             RestAuthenticationEntryPoint restAuthenticationEntryPoint,
-                        RestAccessDeniedHandler restAccessDeniedHandler) {
+            RestAccessDeniedHandler restAccessDeniedHandler) {
         this.jwtAuthenticationFilter = jwtAuthenticationFilter;
         this.requestLoggingFilter = requestLoggingFilter;
         this.restAuthenticationEntryPoint = restAuthenticationEntryPoint;

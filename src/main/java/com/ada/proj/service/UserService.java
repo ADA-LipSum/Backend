@@ -144,7 +144,6 @@ public class UserService {
         }
     }
 
-
     @Caching(evict = {
         @CacheEvict(cacheNames = "users", key = "#uuid"),
         @CacheEvict(cacheNames = "users", key = "'custom:' + #req.customId")

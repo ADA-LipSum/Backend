@@ -11,8 +11,7 @@ import com.ada.proj.config.AutoIncrementProperties;
 
 @SpringBootApplication
 @EnableCaching
-@EnableConfigurationProperties({CookieProperties.class, CorsProperties.class, JwtProperties.class, AutoIncrementProperties.class,
-    })
+@EnableConfigurationProperties({CookieProperties.class, CorsProperties.class, JwtProperties.class, AutoIncrementProperties.class,})
 public class ProjApplication {
 
     public static void main(String[] args) {

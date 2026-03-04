@@ -20,6 +20,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 @RequestMapping("/auth")
 @Tag(name = "인증", description = "인증 상태 확인 관련 API")
 public class AuthSocialController {
+
     private final UserRepository userRepository;
 
     public AuthSocialController(UserRepository userRepository) {

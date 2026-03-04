@@ -10,14 +10,17 @@ import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
 
-@Getter @Setter
+@Getter
+@Setter
 public class PostCreateRequest {
+
     // 서버 자동 설정
     @Schema(description = "서버에서 자동 설정", accessMode = Schema.AccessMode.READ_ONLY, hidden = true)
     @JsonProperty(access = JsonProperty.Access.READ_ONLY)
     private String writerUuid;          // 작성자 UUID
 
-    @NotBlank @Size(max = 20)
+    @NotBlank
+    @Size(max = 20)
     @Schema(example = "게시물 제목")
     private String title;
 
