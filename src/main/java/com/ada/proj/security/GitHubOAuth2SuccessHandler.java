@@ -132,7 +132,7 @@ public class GitHubOAuth2SuccessHandler implements AuthenticationSuccessHandler 
         LoginResponse body = LoginResponse.builder()
                 .tokenType("Bearer")
                 .accessToken(accessToken)
-                .expiresIn(900_000)
+                .expiresIn(60_000)
                 .uuid(userUuid)
                 .role(user.getRole())
                 .userRealname(user.getUserRealname())

@@ -95,7 +95,7 @@ logging:
 
 jwt:
   secret: hCB8xQ7mVYF2wzG3JpA9kL5rN2uS8eD1tQ6yZ3mB7cP4vX9sR1aT6uW3qE8nK5bM
-  access-expiration-ms: 900000
+  access-expiration-ms: 60000
   refresh-expiration-ms: 604800000
 
 app:
