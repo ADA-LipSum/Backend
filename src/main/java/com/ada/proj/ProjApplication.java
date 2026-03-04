@@ -8,14 +8,11 @@ import com.ada.proj.config.CookieProperties;
 import com.ada.proj.config.CorsProperties;
 import com.ada.proj.config.JwtProperties;
 import com.ada.proj.config.AutoIncrementProperties;
-import com.ada.proj.config.GitHubOAuthProperties;
-import com.ada.proj.config.AppSecurityProperties;
-import com.ada.proj.config.S3StorageProperties;
 
 @SpringBootApplication
 @EnableCaching
 @EnableConfigurationProperties({CookieProperties.class, CorsProperties.class, JwtProperties.class, AutoIncrementProperties.class,
-    GitHubOAuthProperties.class, AppSecurityProperties.class, S3StorageProperties.class})
+    })
 public class ProjApplication {
 
     public static void main(String[] args) {

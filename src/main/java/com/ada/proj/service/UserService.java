@@ -11,7 +11,6 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.multipart.MultipartFile;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Caching;
 import org.springframework.cache.annotation.Cacheable;
@@ -25,18 +24,16 @@ import com.ada.proj.dto.ProfileLinksRequest;
 import com.ada.proj.enums.Role;
 import com.ada.proj.entity.User;
 import com.ada.proj.entity.UserData;
-import com.ada.proj.entity.SocialAccount;
 import com.ada.proj.exception.ForbiddenException;
 import com.ada.proj.exception.UnauthenticatedException;
 import com.ada.proj.exception.UserNotFoundException;
-import com.ada.proj.repository.SocialAccountRepository;
 import com.ada.proj.repository.UserDataRepository;
 import com.ada.proj.repository.UserRepository;
-import com.ada.proj.service.FileStorageService.StoredFile;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 
 @Service
 @Transactional
@@ -44,22 +41,16 @@ public class UserService {
 
     private final UserRepository userRepository;
     private final UserDataRepository userDataRepository;
-    private final SocialAccountRepository socialAccountRepository;
     private final PasswordEncoder passwordEncoder;
-    private final FileStorageService fileStorageService;
     private final ObjectMapper objectMapper;
 
     public UserService(UserRepository userRepository,
             UserDataRepository userDataRepository,
-            SocialAccountRepository socialAccountRepository,
             PasswordEncoder passwordEncoder,
-            FileStorageService fileStorageService,
             ObjectMapper objectMapper) {
         this.userRepository = userRepository;
         this.userDataRepository = userDataRepository;
-        this.socialAccountRepository = socialAccountRepository;
         this.passwordEncoder = passwordEncoder;
-        this.fileStorageService = fileStorageService;
         this.objectMapper = objectMapper;
     }
 
@@ -82,35 +73,6 @@ public class UserService {
         ProfileLinksRequest links = null;
         if (ud != null && ud.getLinks() != null) {
             links = parseLinks(ud.getLinks());
-        }
-
-        // Overlay actual social connection status from social_accounts
-        try {
-            var accounts = socialAccountRepository.findByUserUuid(uuid);
-            SocialAccount github = accounts.stream()
-                    .filter(a -> a.getProvider() != null && a.getProvider().equalsIgnoreCase("github"))
-                    .findFirst()
-                    .orElse(null);
-            if (github != null) {
-                if (links == null) {
-                    links = new ProfileLinksRequest();
-                }
-                links.setGithubConnected(true);
-                String githubLink = github.getProviderProfileUrl();
-                if ((githubLink == null || githubLink.isBlank()) && github.getProviderLogin() != null && !github.getProviderLogin().isBlank()) {
-                    githubLink = "https://github.com/" + github.getProviderLogin();
-                }
-                if ((githubLink == null || githubLink.isBlank()) && github.getProviderId() != null && !github.getProviderId().isBlank()) {
-                    githubLink = "https://github.com/" + github.getProviderId();
-                }
-                if (githubLink != null && !githubLink.isBlank()) {
-                    links.setGithub(githubLink);
-                }
-            } else if (links != null) {
-                links.setGithubConnected(false);
-            }
-        } catch (Exception ignored) {
-            // non-fatal
         }
 
         return UserProfileResponse.builder()
@@ -182,141 +144,6 @@ public class UserService {
         }
     }
 
-    /**
-     * 프로필 이미지 업로드 + DB 저장 (서버 저장 → URL 반환 → DB 저장 일괄 처리)
-     */
-    @CacheEvict(cacheNames = "users", key = "#uuid")
-    public UserProfileResponse uploadProfileImage(String uuid, MultipartFile file, Authentication auth) throws IOException {
-        ensureSelfOrAdmin(auth, uuid);
-        User user = userRepository.findByUuid(uuid)
-                .orElseThrow(() -> new UserNotFoundException("User not found"));
-        String uploaderUuid = auth == null ? null : auth.getName();
-        StoredFile saved = fileStorageService.storeImage(file, uploaderUuid);
-        user.setProfileImage(saved.url());
-        Optional<UserData> userDataOpt = userDataRepository.findByUuid(uuid);
-        UserData ud = userDataOpt.orElse(null);
-
-        List<String> techList = null;
-        if (ud != null && ud.getTechStack() != null) {
-            techList = parseTechStack(ud.getTechStack());
-        }
-
-        ProfileLinksRequest links = null;
-        if (ud != null && ud.getLinks() != null) {
-            links = parseLinks(ud.getLinks());
-        }
-
-        // Overlay GitHub connected status
-        try {
-            var accounts = socialAccountRepository.findByUserUuid(uuid);
-            SocialAccount github = accounts.stream()
-                    .filter(a -> a.getProvider() != null && a.getProvider().equalsIgnoreCase("github"))
-                    .findFirst()
-                    .orElse(null);
-            if (github != null) {
-                if (links == null) {
-                    links = new ProfileLinksRequest();
-                }
-                links.setGithubConnected(true);
-                String githubLink = github.getProviderProfileUrl();
-                if ((githubLink == null || githubLink.isBlank()) && github.getProviderLogin() != null && !github.getProviderLogin().isBlank()) {
-                    githubLink = "https://github.com/" + github.getProviderLogin();
-                }
-                if (githubLink != null && !githubLink.isBlank()) {
-                    links.setGithub(githubLink);
-                }
-            } else if (links != null) {
-                links.setGithubConnected(false);
-            }
-        } catch (Exception ignored) {
-        }
-
-        return UserProfileResponse.builder()
-                .uuid(user.getUuid())
-                .adminId(user.getAdminId())
-                .customId(user.getCustomId())
-                .userRealname(user.getUserRealname())
-                .userNickname(user.getUserNickname())
-                .useNickname(user.isUseNickname())
-                .profileImage(user.getProfileImage())
-                .profileBanner(user.getProfileBanner())
-                .role(user.getRole())
-                .intro(ud == null ? null : ud.getIntro())
-                .techStack(techList)
-                .links(links)
-                .badge(ud == null ? null : ud.getBadge())
-                .activityScore(ud == null ? null : ud.getActivityScore())
-                .contributionData(ud == null ? null : ud.getContributionData())
-                .build();
-    }
-
-    /**
-     * 프로필 배너 업로드 + DB 저장 (서버 저장 → URL 반환 → DB 저장 일괄 처리)
-     */
-    @CacheEvict(cacheNames = "users", key = "#uuid")
-    public UserProfileResponse uploadProfileBanner(String uuid, MultipartFile file, Authentication auth) throws IOException {
-        ensureSelfOrAdmin(auth, uuid);
-        User user = userRepository.findByUuid(uuid)
-                .orElseThrow(() -> new UserNotFoundException("User not found"));
-        String uploaderUuid = auth == null ? null : auth.getName();
-        StoredFile saved = fileStorageService.storeImage(file, uploaderUuid);
-        user.setProfileBanner(saved.url());
-        Optional<UserData> userDataOpt = userDataRepository.findByUuid(uuid);
-        UserData ud = userDataOpt.orElse(null);
-
-        List<String> techList = null;
-        if (ud != null && ud.getTechStack() != null) {
-            techList = parseTechStack(ud.getTechStack());
-        }
-
-        ProfileLinksRequest links = null;
-        if (ud != null && ud.getLinks() != null) {
-            links = parseLinks(ud.getLinks());
-        }
-
-        // Overlay GitHub connected status
-        try {
-            var accounts = socialAccountRepository.findByUserUuid(uuid);
-            SocialAccount github = accounts.stream()
-                    .filter(a -> a.getProvider() != null && a.getProvider().equalsIgnoreCase("github"))
-                    .findFirst()
-                    .orElse(null);
-            if (github != null) {
-                if (links == null) {
-                    links = new ProfileLinksRequest();
-                }
-                links.setGithubConnected(true);
-                String githubLink = github.getProviderProfileUrl();
-                if ((githubLink == null || githubLink.isBlank()) && github.getProviderLogin() != null && !github.getProviderLogin().isBlank()) {
-                    githubLink = "https://github.com/" + github.getProviderLogin();
-                }
-                if (githubLink != null && !githubLink.isBlank()) {
-                    links.setGithub(githubLink);
-                }
-            } else if (links != null) {
-                links.setGithubConnected(false);
-            }
-        } catch (Exception ignored) {
-        }
-
-        return UserProfileResponse.builder()
-                .uuid(user.getUuid())
-                .adminId(user.getAdminId())
-                .customId(user.getCustomId())
-                .userRealname(user.getUserRealname())
-                .userNickname(user.getUserNickname())
-                .useNickname(user.isUseNickname())
-                .profileImage(user.getProfileImage())
-                .profileBanner(user.getProfileBanner())
-                .role(user.getRole())
-                .intro(ud == null ? null : ud.getIntro())
-                .techStack(techList)
-                .links(links)
-                .badge(ud == null ? null : ud.getBadge())
-                .activityScore(ud == null ? null : ud.getActivityScore())
-                .contributionData(ud == null ? null : ud.getContributionData())
-                .build();
-    }
 
     @Caching(evict = {
         @CacheEvict(cacheNames = "users", key = "#uuid"),
@@ -531,7 +358,9 @@ public class UserService {
             return null;
         }
         try {
-            return objectMapper.readValue(json, ProfileLinksRequest.class);
+            return objectMapper.readerFor(ProfileLinksRequest.class)
+                    .without(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+                    .readValue(json);
         } catch (IOException e) {
             return null;
         }

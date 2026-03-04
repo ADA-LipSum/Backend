@@ -1,10 +1,8 @@
 package com.ada.proj.controller;
 
-import java.io.IOException;
 import java.util.Objects;
 
 import com.ada.proj.dto.*;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.lang.NonNull;
 import org.springframework.security.core.Authentication;
@@ -16,12 +14,8 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.multipart.MultipartFile;
 
-import com.ada.proj.service.FileStorageService;
-import com.ada.proj.service.FileStorageService.StoredFile;
 import com.ada.proj.service.PostService;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -39,143 +33,30 @@ import lombok.RequiredArgsConstructor;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/posts")
-@Tag(name = "게시물", description = "게시물 CRUD, 파일 업로드, 좋아요 등 게시판 기능 API")
+@Tag(name = "게시물", description = "게시물 CRUD, 좋아요 등 게시판 기능 API")
 public class PostController {
 
     private final PostService postService;
-    private final FileStorageService fileStorageService;
     private final com.ada.proj.service.CommentService commentService; // 댓글 조회 REST 경로 제공
 
-    // 파일 포함 생성
-    @PostMapping(path = {"", "/", "/multipart"}, consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PostMapping(path = {"", "/"})
     @Operation(
-            summary = "게시물 생성(파일 포함)",
-            description = "@RequestPart('data') JSON에 title, content(contentMd 호환), isDev, devTags 포함 가능. 이미지/영상 파일 동시 업로드 지원.",
+            summary = "게시물 생성",
+            description = "JSON body로 게시물을 생성합니다.",
             security = @SecurityRequirement(name = "bearerAuth")
     )
-    @io.swagger.v3.oas.annotations.parameters.RequestBody(content = @Content(mediaType = MediaType.MULTIPART_FORM_DATA_VALUE,
-            encoding = {
-                @Encoding(name = "data", contentType = MediaType.APPLICATION_JSON_VALUE)}
-    ))
-    public ResponseEntity<ApiResponse<String>> createWithFiles(
-            @Parameter(name = "data", description = "게시물 본문 JSON (title, content, isDev, devTags). images/videos는 서버가 파일로 자동 설정합니다.", required = true,
-                    content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            schema = @Schema(implementation = PostCreateRequest.class),
-                            examples = @ExampleObject(value = "{\n  \"title\": \"제목\",\n  \"content\": \"본문\",\n  \"isDev\": true,\n  \"devTags\": \"spring\"\n}")))
-            @Valid @RequestPart("data") PostCreateRequest data,
-            @Parameter(name = "files", description = "이미지/영상 혼합 업로드 (단일 배열)",
-                    content = @Content(mediaType = MediaType.MULTIPART_FORM_DATA_VALUE,
-                            schema = @Schema(type = "string", format = "binary")))
-            @RequestPart(value = "files", required = false) MultipartFile[] files,
-            @Parameter(name = "imageFiles", description = "이미지 파일 배열(하위호환)",
-                    content = @Content(mediaType = MediaType.MULTIPART_FORM_DATA_VALUE,
-                            schema = @Schema(type = "string", format = "binary")))
-            @RequestPart(value = "imageFiles", required = false) MultipartFile[] imageFiles,
-            @Parameter(name = "videoFiles", description = "영상 파일 배열(하위호환)",
-                    content = @Content(mediaType = MediaType.MULTIPART_FORM_DATA_VALUE,
-                            schema = @Schema(type = "string", format = "binary")))
-            @RequestPart(value = "videoFiles", required = false) MultipartFile[] videoFiles,
+    public ResponseEntity<ApiResponse<String>> create(
+            @Valid @RequestBody PostCreateRequest data,
             Authentication authentication
-    ) throws IOException {
+    ) {
         PostCreateRequest payload = Objects.requireNonNull(data, "data");
-        String uploaderUuid = authentication == null ? null : authentication.getName();
         if (authentication != null) {
             payload.setWriterUuid(authentication.getName());
         }
 
-        StringBuilder md = new StringBuilder();
-        if (payload.getContent() != null) {
-            md.append(payload.getContent());
-        }
-
-        // 단일 files 배열도 허용(이미지/영상 자동 판별). 하위호환: imageFiles, videoFiles 유지
-        appendMixedFiles(payload, files, md, uploaderUuid);
-        appendImages(payload, imageFiles, md, uploaderUuid);
-        appendVideos(payload, videoFiles, md, uploaderUuid);
-
-        payload.setContent(md.toString());
         String uuid = postService.create(payload);
         return ResponseEntity.status(org.springframework.http.HttpStatus.CREATED)
                 .body(ApiResponse.success(uuid));
-    }
-
-    private void appendMixedFiles(PostCreateRequest data, MultipartFile[] files, StringBuilder md, String uploaderUuid) throws IOException {
-        if (files == null) {
-            return;
-        }
-        String firstImg = null;
-        String firstVid = null;
-        for (MultipartFile f : files) {
-            if (f == null || f.isEmpty()) {
-                continue;
-            }
-            StoredFile saved = fileStorageService.storeAuto(f, uploaderUuid);
-
-            boolean isVideo = saved.contentType() != null && saved.contentType().startsWith("video/");
-            boolean isImage = saved.contentType() != null && saved.contentType().startsWith("image/");
-
-            if (isVideo) {
-                if (firstVid == null) {
-                    firstVid = saved.url();
-                }
-                md.append("\n\n<video controls src=\"")
-                        .append(saved.url())
-                        .append("\" style=\"max-width:100%\"></video>\n");
-            } else {
-                if (firstImg == null && isImage) {
-                    firstImg = saved.url();
-                }
-                md.append("\n\n![image](").append(saved.url()).append(")\n");
-            }
-        }
-        if (firstImg != null && (data.getImages() == null || data.getImages().isBlank())) {
-            data.setImages(firstImg);
-        }
-        if (firstVid != null && (data.getVideos() == null || data.getVideos().isBlank())) {
-            data.setVideos(firstVid);
-        }
-    }
-
-    private void appendImages(PostCreateRequest data, MultipartFile[] imageFiles, StringBuilder md, String uploaderUuid) throws IOException {
-        if (imageFiles == null) {
-            return;
-        }
-        String firstImg = null;
-        for (MultipartFile f : imageFiles) {
-            if (f == null || f.isEmpty()) {
-                continue;
-            }
-            StoredFile saved = fileStorageService.storeImage(f, uploaderUuid);
-            if (firstImg == null) {
-                firstImg = saved.url();
-            }
-            md.append("\n\n![image](").append(saved.url()).append(")\n");
-        }
-        if (firstImg != null && (data.getImages() == null || data.getImages().isBlank())) {
-            data.setImages(firstImg);
-        }
-    }
-
-    private void appendVideos(PostCreateRequest data, MultipartFile[] videoFiles, StringBuilder md, String uploaderUuid) throws IOException {
-        if (videoFiles == null) {
-            return;
-        }
-        String firstVid = null;
-        for (MultipartFile f : videoFiles) {
-            if (f == null || f.isEmpty()) {
-                continue;
-            }
-            StoredFile saved = fileStorageService.storeVideo(f, uploaderUuid);
-            if (firstVid == null) {
-                firstVid = saved.url();
-            }
-            md.append("\n\n<video controls src=\"")
-                    .append(saved.url())
-                    .append("\" style=\"max-width:100%\"></video>\n");
-        }
-        if (firstVid != null && (data.getVideos() == null || data.getVideos().isBlank())) {
-            data.setVideos(firstVid);
-        }
     }
 
     @PutMapping("/{uuid}")

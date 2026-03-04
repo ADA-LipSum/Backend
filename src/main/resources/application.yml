@@ -5,7 +5,7 @@ spring:
   datasource:
     url: jdbc:mysql://localhost:3306/defaultdb?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8
     username: root
-    password: RhdnausEnfgdjfk
+    password: 1234
     driver-class-name: com.mysql.cj.jdbc.Driver
     hikari:
       data-source-properties:
@@ -46,13 +46,6 @@ spring:
     ansi:
       enabled: always
 
-  servlet:
-    multipart:
-      max-file-size: 500MB
-      max-request-size: 500MB
-      file-size-threshold: 10MB
-      location: uploads/tmp
-
   web:
     locale: ko_KR
     locale-resolver: fixed
@@ -70,8 +63,6 @@ server:
       enabled: true
       force: true
   tomcat:
-    max-http-form-post-size: 500MB
-    max-swallow-size: 500MB
     threads:
       max: 300
       min-spare: 30
@@ -117,11 +108,3 @@ app:
 
   cors:
     allowed-origin-patterns: http://localhost:*,http://127.0.0.1:*,http://3.38.107.119:*
-
-  storage:
-    s3:
-      bucket: ${APP_STORAGE_S3_BUCKET:gbsw-s3}
-      region: ${APP_STORAGE_S3_REGION:ap-northeast-2}
-      # key-prefix: ${APP_STORAGE_S3_KEY_PREFIX:}
-      # endpoint: ${APP_STORAGE_S3_ENDPOINT:}
-      # path-style-access: false

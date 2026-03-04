@@ -6,11 +6,10 @@ Spring Boot 기반으로 경북소프트웨어마이스터고등학교 구성원
 
 - 회원 관리: 역할(Role) 기반 권한, 닉네임/프로필/배너 이미지 관리, 커스텀 로그인(ID/PW) 생성
 - 인증/인가: JWT 기반 인증, 표준 오류 응답(401/403)
-- 게시물: 생성(파일 업로드), 수정, 삭제, 목록, 상세, 좋아요 토글
+- 게시물: 생성, 수정, 삭제, 목록, 상세, 좋아요 토글
 - 댓글: 작성/수정/삭제, 대댓글 구조, 좋아요/고정 토글
 - 포인트: 지급/차감/사용 및 거래 로그
 - 거래/아이템: 아이템 생성/검색/구매/재고 관리
-- 파일 업로드: 이미지/영상 저장 + 본문 Markdown 삽입
 - 헬스 체크: 기본 HealthController (확장 가능)
 
 ## 기술 스택
@@ -113,7 +112,7 @@ Get-Content app.log -Wait
 
 | 메서드 | 경로 | 설명 |
 |--------|------|------|
-| POST | /api/posts | 게시글 생성 (multipart 지원) |
+| POST | /api/posts | 게시글 생성 (JSON) |
 | GET  | /api/posts | 게시글 목록 조회 (page/size) |
 | GET  | /api/posts/{uuid} | 게시글 상세 조회 |
 | POST | /api/posts/{uuid}/like | 좋아요 토글 |
@@ -125,7 +124,6 @@ Get-Content app.log -Wait
 | POST | /api/comments/{id}/fixed | 댓글 고정/해제 |
 | GET  | /users | 사용자 목록 (관리자) |
 | PATCH | /users/{uuid}/profile | 사용자 프로필 수정 |
-| POST | /users/{uuid}/profile/image | 프로필 이미지 업로드 |
 
 > 더 많은 엔드포인트는 Swagger UI 또는 소스 코드 컨트롤러 패키지 참고.
 

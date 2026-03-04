@@ -25,10 +25,10 @@ public class PostCreateRequest {
     @JsonAlias({"contentMd"})
     @Schema(example = "본문 내용입니다")
     private String content;
-    @Schema(description = "대표 이미지 URL (서버가 파일 업로드 시 자동 지정)", accessMode = Schema.AccessMode.READ_ONLY, hidden = true)
+    @Schema(description = "대표 이미지 URL", accessMode = Schema.AccessMode.READ_ONLY, hidden = true)
     @JsonProperty(access = JsonProperty.Access.READ_ONLY)
     private String images;              // 이미지 URL
-    @Schema(description = "대표 영상 URL (서버가 파일 업로드 시 자동 지정)", accessMode = Schema.AccessMode.READ_ONLY, hidden = true)
+    @Schema(description = "대표 영상 URL", accessMode = Schema.AccessMode.READ_ONLY, hidden = true)
     @JsonProperty(access = JsonProperty.Access.READ_ONLY)
     private String videos;              // 영상 URL
 

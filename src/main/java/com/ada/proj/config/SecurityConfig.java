@@ -2,7 +2,6 @@ package com.ada.proj.config;
 
 import java.util.List;
 
-import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -14,7 +13,6 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
@@ -36,21 +34,15 @@ public class SecurityConfig {
     private final RequestLoggingFilter requestLoggingFilter;
     private final RestAuthenticationEntryPoint restAuthenticationEntryPoint;
     private final RestAccessDeniedHandler restAccessDeniedHandler;
-    private final com.ada.proj.security.GitHubOAuth2SuccessHandler gitHubOAuth2SuccessHandler;
-    private final ObjectProvider<ClientRegistrationRepository> clientRegistrationRepositoryProvider;
 
     public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter,
             RequestLoggingFilter requestLoggingFilter,
             RestAuthenticationEntryPoint restAuthenticationEntryPoint,
-            RestAccessDeniedHandler restAccessDeniedHandler,
-            com.ada.proj.security.GitHubOAuth2SuccessHandler gitHubOAuth2SuccessHandler,
-            ObjectProvider<ClientRegistrationRepository> clientRegistrationRepositoryProvider) {
+                        RestAccessDeniedHandler restAccessDeniedHandler) {
         this.jwtAuthenticationFilter = jwtAuthenticationFilter;
         this.requestLoggingFilter = requestLoggingFilter;
         this.restAuthenticationEntryPoint = restAuthenticationEntryPoint;
         this.restAccessDeniedHandler = restAccessDeniedHandler;
-        this.gitHubOAuth2SuccessHandler = gitHubOAuth2SuccessHandler;
-        this.clientRegistrationRepositoryProvider = clientRegistrationRepositoryProvider;
     }
 
     @Bean
@@ -69,17 +61,12 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                 .requestMatchers(
                         "/api/auth/**",
-                        "/api/github/login",
-                        "/api/github/callback",
-                        "/oauth2/**",
-                        "/login/oauth2/**",
                         "/health",
                         "/api/health",
                         "/v3/api-docs",
                         "/v3/api-docs/**",
                         "/swagger-ui/**",
                         "/swagger-ui.html",
-                        "/files/**",
                         "/tools/**",
                         "/api/posts",
                         "/api/posts/view"
@@ -105,14 +92,6 @@ public class SecurityConfig {
                 )
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
                 .addFilterAfter(requestLoggingFilter, JwtAuthenticationFilter.class);
-
-        ClientRegistrationRepository clientRegistrationRepository = clientRegistrationRepositoryProvider
-                .getIfAvailable();
-        if (clientRegistrationRepository != null) {
-            http.oauth2Login(o -> o
-                    .redirectionEndpoint(re -> re.baseUri("/api/auth/*/callback"))
-                    .successHandler(gitHubOAuth2SuccessHandler));
-        }
         return http.build();
     }
 

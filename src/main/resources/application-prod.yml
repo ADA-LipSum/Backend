@@ -5,29 +5,5 @@ app:
     same-site: None
     max-age: 604800
 
-  github:
-    oauth:
-      client-id: ${GT_CLIENT_ID}
-      client-secret: ${GT_CLIENT_SECRET}
-      scope: read:user
-      redirect-uri: ${GT_LINK_REDIRECT_URI:https://ada-back.com/api/github/callback}
-      success-redirect: ${GT_LINK_SUCCESS_REDIRECT:}
-      failure-redirect: ${GT_LINK_FAILURE_REDIRECT:}
-
-  security:
-    oauth-state-secret: ${OAUTH_STATE_SECRET}
-    token-crypto-key-b64: ${TOKEN_CRYPTO_KEY_B64}
-
-spring:
-  security:
-    oauth2:
-      client:
-        registration:
-          github:
-            client-id: ${GT_CLIENT_ID}
-            client-secret: ${GT_CLIENT_SECRET}
-            scope: read:user
-            redirect-uri: ${GT_LOGIN_REDIRECT_URI:https://ada-back.com/api/auth/github/callback}
-
 server:
   forward-headers-strategy: framework

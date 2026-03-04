@@ -14,13 +14,4 @@ public class ProfileLinksRequest {
 
     @Schema(description = "linked_in 프로필 URL", example = "https://www.solved_ac.com/in/username/")
     private String linked_in;
-
-    @Schema(description = "GitHub 연동 여부", example = "true")
-    private Boolean githubConnected;
-
-    @Schema(description = "StackOverflow 연동 여부", example = "false")
-    private Boolean discordConnected;
-
-    @Schema(description = "LinkedIn 연동 여부", example = "true")
-    private Boolean linkedinConnected;
 }

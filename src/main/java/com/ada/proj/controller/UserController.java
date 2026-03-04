@@ -8,11 +8,9 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -97,25 +95,4 @@ public class UserController {
         return ResponseEntity.ok(ApiResponse.ok(userService.getUserProfile(uuid)));
     }
 
-    @PostMapping(path = "/users/{uuid}/profile/image", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    @Operation(summary = "프로필 이미지 업로드", description = "이미지 파일을 업로드하고 URL을 DB에 저장 후 프로필을 반환합니다.")
-    public ResponseEntity<ApiResponse<UserProfileResponse>> uploadProfileImage(
-            @PathVariable String uuid,
-            @Parameter(description = "업로드할 이미지 파일", required = true)
-            @RequestPart("file") MultipartFile file,
-            Authentication auth
-    ) throws Exception {
-        return ResponseEntity.ok(ApiResponse.success(userService.uploadProfileImage(uuid, file, auth)));
-    }
-
-    @PostMapping(path = "/users/{uuid}/profile/banner", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    @Operation(summary = "프로필 배너 업로드", description = "배너 이미지를 업로드하고 URL을 DB에 저장 후 프로필을 반환합니다.")
-    public ResponseEntity<ApiResponse<UserProfileResponse>> uploadProfileBanner(
-            @PathVariable String uuid,
-            @Parameter(description = "업로드할 배너 이미지 파일", required = true)
-            @RequestPart("file") MultipartFile file,
-            Authentication auth
-    ) throws Exception {
-        return ResponseEntity.ok(ApiResponse.success(userService.uploadProfileBanner(uuid, file, auth)));
-    }
 }
