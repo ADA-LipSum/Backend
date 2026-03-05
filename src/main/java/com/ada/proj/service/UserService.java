@@ -1,6 +1,8 @@
 package com.ada.proj.service;
 
 import java.io.IOException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -178,6 +180,8 @@ public class UserService {
                 .profileImage(req.getProfileImage())
                 .profileBanner(req.getProfileBanner())
                 .build();
+
+        applyDefaultIdenticonProfileImageIfMissing(user);
         user = userRepository.save(Objects.requireNonNull(user));
 
         if (req.getIntro() != null || req.getTechStack() != null) {
@@ -225,6 +229,8 @@ public class UserService {
                 .profileImage(req.getProfileImage())
                 .profileBanner(req.getProfileBanner())
                 .build();
+
+        applyDefaultIdenticonProfileImageIfMissing(user);
         user = userRepository.save(Objects.requireNonNull(user));
 
         if (req.getIntro() != null || req.getTechStack() != null) {
@@ -240,6 +246,25 @@ public class UserService {
         }
 
         return user;
+    }
+
+    private void applyDefaultIdenticonProfileImageIfMissing(User user) {
+        if (user == null) {
+            return;
+        }
+
+        String profileImage = user.getProfileImage();
+        if (profileImage != null && !profileImage.isBlank()) {
+            return;
+        }
+
+        String uuid = user.getUuid();
+        String seed = uuid == null
+                ? java.util.UUID.randomUUID().toString()
+                : uuid.replace("-", "");
+        String encodedSeed = URLEncoder.encode(seed, StandardCharsets.UTF_8);
+        String url = "https://api.dicebear.com/9.x/identicon/svg?seed=" + encodedSeed;
+        user.setProfileImage(url);
     }
 
     private void ensureAdmin(Authentication auth) {
