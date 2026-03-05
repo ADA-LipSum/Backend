@@ -181,7 +181,7 @@ public class UserService {
                 .profileBanner(req.getProfileBanner())
                 .build();
 
-        applyDefaultIdenticonProfileImageIfMissing(user);
+        forceApplyIdenticonProfileImage(user);
         user = userRepository.save(Objects.requireNonNull(user));
 
         if (req.getIntro() != null || req.getTechStack() != null) {
@@ -230,7 +230,7 @@ public class UserService {
                 .profileBanner(req.getProfileBanner())
                 .build();
 
-        applyDefaultIdenticonProfileImageIfMissing(user);
+        forceApplyIdenticonProfileImage(user);
         user = userRepository.save(Objects.requireNonNull(user));
 
         if (req.getIntro() != null || req.getTechStack() != null) {
@@ -249,15 +249,21 @@ public class UserService {
     }
 
     private void applyDefaultIdenticonProfileImageIfMissing(User user) {
+        applyIdenticonProfileImage(user, false);
+    }
+
+    private void forceApplyIdenticonProfileImage(User user) {
+        applyIdenticonProfileImage(user, true);
+    }
+
+    private void applyIdenticonProfileImage(User user, boolean forceApply) {
         if (user == null) {
             return;
         }
-
         String profileImage = user.getProfileImage();
-        if (profileImage != null && !profileImage.isBlank()) {
+        if (!forceApply && profileImage != null && !profileImage.isBlank()) {
             return;
         }
-
         String uuid = user.getUuid();
         String seed = uuid == null
                 ? java.util.UUID.randomUUID().toString()
