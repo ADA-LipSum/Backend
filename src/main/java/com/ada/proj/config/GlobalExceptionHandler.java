@@ -10,12 +10,18 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
+import org.springframework.validation.FieldError;
 
 import com.ada.proj.dto.ApiResponse;
 import com.ada.proj.enums.ErrorCode;
 
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.ConstraintViolationException;
+
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -35,11 +41,64 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<ApiResponse<Void>> handleValidation(MethodArgumentNotValidException e, HttpServletRequest req) {
-        String msg = e.getBindingResult().getAllErrors().stream().findFirst()
-                .map(err -> err.getDefaultMessage()).orElse("Validation error");
+    public ResponseEntity<ApiResponse<Object>> handleValidation(MethodArgumentNotValidException e, HttpServletRequest req) {
+        Map<String, String> errors = new LinkedHashMap<>();
+        for (FieldError fe : e.getBindingResult().getFieldErrors()) {
+            if (fe == null) {
+                continue;
+            }
+            String field = fe.getField();
+            String message = fe.getDefaultMessage();
+            if (field != null && !field.isBlank() && message != null && !message.isBlank()) {
+                errors.putIfAbsent(field, message);
+            }
+        }
+
+        String msg;
+        if (!errors.isEmpty()) {
+            Map.Entry<String, String> first = errors.entrySet().iterator().next();
+            msg = first.getKey() + ": " + first.getValue();
+        } else {
+            msg = e.getBindingResult().getAllErrors().stream().findFirst()
+                    .map(err -> err.getDefaultMessage()).orElse("요청 값이 유효하지 않습니다");
+        }
+
+        Map<String, Object> data = new LinkedHashMap<>();
+        data.put("errors", errors);
+
         logWarn(e, req, 400, ErrorCode.VALIDATION_ERROR.name());
-        return ResponseEntity.badRequest().body(ApiResponse.error(ErrorCode.VALIDATION_ERROR.name(), msg));
+        return ResponseEntity.badRequest().body(ApiResponse.errorWithData(ErrorCode.VALIDATION_ERROR.name(), msg, data));
+    }
+
+    @ExceptionHandler(ConstraintViolationException.class)
+    public ResponseEntity<ApiResponse<Object>> handleConstraintViolation(ConstraintViolationException e, HttpServletRequest req) {
+        Map<String, String> errors = new LinkedHashMap<>();
+        if (e != null && e.getConstraintViolations() != null) {
+            for (ConstraintViolation<?> v : e.getConstraintViolations()) {
+                if (v == null) {
+                    continue;
+                }
+                String path = v.getPropertyPath() == null ? null : v.getPropertyPath().toString();
+                String message = v.getMessage();
+                if (path != null && !path.isBlank() && message != null && !message.isBlank()) {
+                    errors.putIfAbsent(path, message);
+                }
+            }
+        }
+
+        String msg;
+        if (!errors.isEmpty()) {
+            Map.Entry<String, String> first = errors.entrySet().iterator().next();
+            msg = first.getKey() + ": " + first.getValue();
+        } else {
+            msg = "요청 값이 유효하지 않습니다";
+        }
+
+        Map<String, Object> data = new LinkedHashMap<>();
+        data.put("errors", errors);
+
+        logWarn(e, req, 400, ErrorCode.VALIDATION_ERROR.name());
+        return ResponseEntity.badRequest().body(ApiResponse.errorWithData(ErrorCode.VALIDATION_ERROR.name(), msg, data));
     }
 
     @ExceptionHandler(UnauthenticatedException.class)
