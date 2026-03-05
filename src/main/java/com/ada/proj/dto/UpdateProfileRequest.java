@@ -9,6 +9,7 @@ import lombok.Data;
 @Data
 @Schema(name = "UpdateProfileRequest", description = "프로필 수정 요청 바디")
 public class UpdateProfileRequest {
+
     @Size(max = 10)
     @Schema(description = "닉네임(최대 10자)", example = "길동쌤")
     private String nickname;
@@ -25,7 +26,4 @@ public class UpdateProfileRequest {
 
     @Schema(description = "기술 스택(배열)", example = "[\"React\", \"Spring\", \"MySQL\"]")
     private List<String> techStack;
-
-    @Schema(description = "외부 링크 정보(JSON)")
-    private ProfileLinksRequest links;
 }

@@ -8,6 +8,7 @@ import java.util.List;
 @Data
 @Builder
 public class UserProfileResponse {
+
     private String uuid;
     private String adminId;
     private String customId;
@@ -21,7 +22,6 @@ public class UserProfileResponse {
     // user_data
     private String intro;
     private List<String> techStack;
-    private ProfileLinksRequest links; // 타입드 객체로 반환
     private String badge;
     private Integer activityScore;
     private String contributionData; // JSON 문자열

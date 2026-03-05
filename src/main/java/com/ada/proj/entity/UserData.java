@@ -14,7 +14,7 @@ import java.time.Instant;
 @Entity
 @Table(name = "user_data",
         uniqueConstraints = {
-                @UniqueConstraint(name = "uk_user_data_uuid", columnNames = {"uuid"})
+            @UniqueConstraint(name = "uk_user_data_uuid", columnNames = {"uuid"})
         })
 public class UserData {
 
@@ -30,10 +30,6 @@ public class UserData {
 
     @Column(name = "tech_stack", length = 255)
     private String techStack;
-
-    // JSON 컬럼: 문자열(JSON)로 저장
-    @Column(columnDefinition = "JSON")
-    private String links;
 
     @Column(length = 50)
     private String badge;

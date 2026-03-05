@@ -20,7 +20,6 @@ import com.ada.proj.dto.CreateUserRequest;
 import com.ada.proj.dto.UpdatePasswordRequest;
 import com.ada.proj.dto.UpdateProfileRequest;
 import com.ada.proj.dto.UserProfileResponse;
-import com.ada.proj.dto.ProfileLinksRequest;
 import com.ada.proj.enums.Role;
 import com.ada.proj.entity.User;
 import com.ada.proj.entity.UserData;
@@ -31,9 +30,7 @@ import com.ada.proj.repository.UserDataRepository;
 import com.ada.proj.repository.UserRepository;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.DeserializationFeature;
 
 @Service
 @Transactional
@@ -70,11 +67,6 @@ public class UserService {
             techList = parseTechStack(ud.getTechStack());
         }
 
-        ProfileLinksRequest links = null;
-        if (ud != null && ud.getLinks() != null) {
-            links = parseLinks(ud.getLinks());
-        }
-
         return UserProfileResponse.builder()
                 .uuid(user.getUuid())
                 .adminId(user.getAdminId())
@@ -87,7 +79,6 @@ public class UserService {
                 .role(user.getRole())
                 .intro(ud == null ? null : ud.getIntro())
                 .techStack(techList)
-                .links(links)
                 .badge(ud == null ? null : ud.getBadge())
                 .activityScore(ud == null ? null : ud.getActivityScore())
                 .contributionData(ud == null ? null : ud.getContributionData())
@@ -133,9 +124,6 @@ public class UserService {
         }
         if (req.getTechStack() != null) {
             ud.setTechStack(serializeTechStack(req.getTechStack()));
-        }
-        if (req.getLinks() != null) {
-            ud.setLinks(serializeLinks(req));
         }
 
         // persist if new or changed
@@ -192,7 +180,7 @@ public class UserService {
                 .build();
         user = userRepository.save(Objects.requireNonNull(user));
 
-        if (req.getIntro() != null || req.getTechStack() != null || req.getLinks() != null) {
+        if (req.getIntro() != null || req.getTechStack() != null) {
             UserData ud = new UserData();
             ud.setUuid(user.getUuid());
             if (req.getIntro() != null) {
@@ -200,9 +188,6 @@ public class UserService {
             }
             if (req.getTechStack() != null) {
                 ud.setTechStack(serializeTechStack(req.getTechStack()));
-            }
-            if (req.getLinks() != null) {
-                ud.setLinks(serializeLinks(req));
             }
             userDataRepository.save(ud);
         }
@@ -242,7 +227,7 @@ public class UserService {
                 .build();
         user = userRepository.save(Objects.requireNonNull(user));
 
-        if (req.getIntro() != null || req.getTechStack() != null || req.getLinks() != null) {
+        if (req.getIntro() != null || req.getTechStack() != null) {
             UserData ud = new UserData();
             ud.setUuid(user.getUuid());
             if (req.getIntro() != null) {
@@ -250,9 +235,6 @@ public class UserService {
             }
             if (req.getTechStack() != null) {
                 ud.setTechStack(serializeTechStack(req.getTechStack()));
-            }
-            if (req.getLinks() != null) {
-                ud.setLinks(serializeLinks(req));
             }
             userDataRepository.save(ud);
         }
@@ -321,46 +303,6 @@ public class UserService {
         try {
             return objectMapper.writeValueAsString(list);
         } catch (JsonProcessingException e) {
-            return null;
-        }
-    }
-
-    private String serializeLinks(UpdateProfileRequest req) {
-        ProfileLinksRequest links = req.getLinks();
-        if (links == null) {
-            return null;
-        }
-        try {
-            // Build a JSON object from ProfileLinksRequest keeping only non-null values
-            JsonNode node = objectMapper.valueToTree(links);
-            return objectMapper.writeValueAsString(node);
-        } catch (JsonProcessingException e) {
-            return null;
-        }
-    }
-
-    private String serializeLinks(CreateUserRequest req) {
-        ProfileLinksRequest links = req.getLinks();
-        if (links == null) {
-            return null;
-        }
-        try {
-            JsonNode node = objectMapper.valueToTree(links);
-            return objectMapper.writeValueAsString(node);
-        } catch (JsonProcessingException e) {
-            return null;
-        }
-    }
-
-    private ProfileLinksRequest parseLinks(String json) {
-        if (json == null || json.isBlank()) {
-            return null;
-        }
-        try {
-            return objectMapper.readerFor(ProfileLinksRequest.class)
-                    .without(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
-                    .readValue(json);
-        } catch (IOException e) {
             return null;
         }
     }
