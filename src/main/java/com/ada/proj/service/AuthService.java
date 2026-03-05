@@ -10,11 +10,12 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.ada.proj.config.JwtProperties;
+import com.ada.proj.dto.AuthMeResponse;
 import com.ada.proj.dto.LoginRequest;
 import com.ada.proj.dto.LoginResponse;
 import com.ada.proj.dto.TeacherSignupRequest;
 import com.ada.proj.dto.TokenReissueRequest;
-import com.ada.proj.dto.AuthMeResponse;
 import com.ada.proj.entity.RefreshToken;
 import com.ada.proj.entity.User;
 import com.ada.proj.enums.Role;
@@ -39,15 +40,18 @@ public class AuthService {
     private final RefreshTokenRepository refreshTokenRepository;
     private final JwtTokenProvider jwtTokenProvider;
     private final PasswordEncoder passwordEncoder;
+    private final JwtProperties jwtProperties;
 
     public AuthService(UserRepository userRepository,
             RefreshTokenRepository refreshTokenRepository,
             JwtTokenProvider jwtTokenProvider,
-            PasswordEncoder passwordEncoder) {
+            PasswordEncoder passwordEncoder,
+            JwtProperties jwtProperties) {
         this.userRepository = userRepository;
         this.refreshTokenRepository = refreshTokenRepository;
         this.jwtTokenProvider = jwtTokenProvider;
         this.passwordEncoder = passwordEncoder;
+        this.jwtProperties = jwtProperties;
     }
 
     @SuppressWarnings("null")
@@ -71,7 +75,7 @@ public class AuthService {
         RefreshToken entity = RefreshToken.builder()
                 .uuid(user.getUuid())
                 .token(refreshToken)
-                .expiresAt(Instant.now().plusMillis(604800000)) // 7d
+                .expiresAt(Instant.now().plusMillis(jwtProperties.getRefreshExpirationMs()))
                 .build();
 
         refreshTokenRepository.save(entity);
@@ -79,7 +83,7 @@ public class AuthService {
         return LoginResponse.builder()
                 .tokenType("Bearer")
                 .accessToken(accessToken)
-                .expiresIn(60_000)
+                .expiresIn(jwtProperties.getAccessExpirationMs())
                 .uuid(user.getUuid())
                 .role(user.getRole())
                 .userRealname(user.getUserRealname())
@@ -114,14 +118,14 @@ public class AuthService {
                 RefreshToken.builder()
                         .uuid(user.getUuid())
                         .token(refreshToken)
-                        .expiresAt(Instant.now().plusMillis(604800000))
+                        .expiresAt(Instant.now().plusMillis(jwtProperties.getRefreshExpirationMs()))
                         .build()
         );
 
         return LoginResponse.builder()
                 .tokenType("Bearer")
                 .accessToken(accessToken)
-                .expiresIn(60_000)
+                .expiresIn(jwtProperties.getAccessExpirationMs())
                 .uuid(user.getUuid())
                 .role(user.getRole())
                 .userRealname(user.getUserRealname())
@@ -156,14 +160,14 @@ public class AuthService {
                 RefreshToken.builder()
                         .uuid(user.getUuid())
                         .token(refreshToken)
-                        .expiresAt(Instant.now().plusMillis(604800000))
+                        .expiresAt(Instant.now().plusMillis(jwtProperties.getRefreshExpirationMs()))
                         .build()
         );
 
         return LoginResponse.builder()
                 .tokenType("Bearer")
                 .accessToken(accessToken)
-                .expiresIn(60_000)
+                .expiresIn(jwtProperties.getAccessExpirationMs())
                 .uuid(user.getUuid())
                 .role(user.getRole())
                 .userRealname(user.getUserRealname())
@@ -207,7 +211,7 @@ public class AuthService {
         String newRefresh = jwtTokenProvider.generateRefreshToken(uuid, role);
 
         stored.setToken(newRefresh);
-        stored.setExpiresAt(Instant.now().plusMillis(604800000));
+        stored.setExpiresAt(Instant.now().plusMillis(jwtProperties.getRefreshExpirationMs()));
         refreshTokenRepository.save(stored);
 
         User user = userRepository.findByUuid(uuid).orElse(null);
@@ -215,7 +219,7 @@ public class AuthService {
         LoginResponse.LoginResponseBuilder builder = LoginResponse.builder()
                 .tokenType("Bearer")
                 .accessToken(newAccess)
-                .expiresIn(60_000)
+                .expiresIn(jwtProperties.getAccessExpirationMs())
                 .uuid(uuid)
                 .role(role == null ? null : Role.valueOf(role));
 

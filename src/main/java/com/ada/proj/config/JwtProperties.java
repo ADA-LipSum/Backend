@@ -8,8 +8,9 @@ import org.springframework.stereotype.Component;
 public class JwtProperties {
 
     private String secret;
-    private long accessExpirationMs;
-    private long refreshExpirationMs;
+    // Keep defaults aligned with JwtTokenProvider (@Value defaults)
+    private long accessExpirationMs = 900000;
+    private long refreshExpirationMs = 604800000;
 
     public String getSecret() {
         return secret;
