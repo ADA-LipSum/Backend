@@ -78,6 +78,10 @@ public class SecurityConfig {
                         "/auth/signup/teacher",
                         "/auth/admin/init"
                 ).permitAll()
+                .requestMatchers(HttpMethod.POST,
+                        "/auth/admin/create",
+                        "/auth/logout/all"
+                ).hasRole("ADMIN")
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                 .requestMatchers(
                         "/api/trade/items/**",
@@ -111,14 +115,7 @@ public class SecurityConfig {
         configuration.setAllowedOriginPatterns(List.of("*")); // ngrok 등 외부 도메인 허용
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
-        configuration.setAllowCredentials(false);
         configuration.setExposedHeaders(List.of("Authorization", "Content-Disposition", "Location", "X-Request-Id"));
-        configuration.setAllowedOrigins(List.of(
-                "http://localhost:5173/",
-                "http://3.38.107.119:8080/",
-                "http://3.38.107.119:8080/*",
-                "http://localhost:5173/*"
-        ));
         configuration.setAllowCredentials(true);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();

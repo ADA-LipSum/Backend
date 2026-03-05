@@ -3,6 +3,7 @@ package com.ada.proj.controller;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -20,6 +21,7 @@ import com.ada.proj.dto.LoginResponse;
 import com.ada.proj.dto.TeacherSignupRequest;
 import com.ada.proj.dto.TokenReissueRequest;
 import com.ada.proj.entity.RefreshToken;
+import com.ada.proj.exception.UnauthenticatedException;
 import com.ada.proj.repository.RefreshTokenRepository;
 import com.ada.proj.service.AuthService;
 import com.ada.proj.service.UserService;
@@ -96,7 +98,7 @@ public class AuthController {
 
     @PostMapping("/reissue")
     @Operation(summary = "토큰 재발급")
-    public ResponseEntity<ApiResponse<LoginResponse>> reissue(
+    public ResponseEntity<ApiResponse<AuthTokenResponse>> reissue(
             HttpServletRequest httpServletRequest,
             @RequestBody(required = false) TokenReissueRequest request) {
 
@@ -133,9 +135,15 @@ public class AuthController {
 
         ResponseCookie cookie = createCookie(token.getToken());
 
+        AuthTokenResponse body = AuthTokenResponse.builder()
+                .tokenType(res.getTokenType())
+                .accessToken(res.getAccessToken())
+                .expiresIn(res.getExpiresIn())
+                .build();
+
         return ResponseEntity.ok()
                 .header(HttpHeaders.SET_COOKIE, cookie.toString())
-                .body(ApiResponse.ok(res));
+                .body(ApiResponse.ok(body));
     }
 
     private String extractRefreshTokenFromCookie(HttpServletRequest request) {
@@ -177,8 +185,11 @@ public class AuthController {
     }
 
     @PostMapping("/logout")
-    @Operation(summary = "로그아웃")
+    @Operation(summary = "로그아웃", security = @SecurityRequirement(name = "bearerAuth"))
     public ResponseEntity<ApiResponse<Void>> logout(Authentication authentication) {
+        if (authentication == null || authentication.getName() == null || authentication.getName().isBlank()) {
+            throw new UnauthenticatedException("Unauthenticated");
+        }
 
         authService.logout(authentication.getName());
 
@@ -196,7 +207,8 @@ public class AuthController {
     }
 
     @PostMapping("/logout/all")
-    @Operation(summary = "전체 로그아웃 (관리자 전용)")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "전체 로그아웃 (관리자 전용)", security = @SecurityRequirement(name = "bearerAuth"))
     public ResponseEntity<ApiResponse<Void>> globalLogout(Authentication authentication) {
 
         authService.globalLogout(authentication);
@@ -231,7 +243,8 @@ public class AuthController {
     }
 
     @PostMapping("/admin/create")
-    @Operation(summary = "관리자: 사용자 생성")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "관리자: 사용자 생성", security = @SecurityRequirement(name = "bearerAuth"))
     public ResponseEntity<ApiResponse<CreateUserResponse>> createUserByAdmin(
             @Valid @RequestBody CreateUserRequest req,
             Authentication authentication) {
