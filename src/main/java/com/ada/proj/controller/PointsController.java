@@ -1,17 +1,11 @@
 package com.ada.proj.controller;
 
+import com.ada.proj.dto.*;
 import com.ada.proj.service.UserService;
 import org.springframework.security.core.Authentication;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
-import com.ada.proj.dto.ApiResponse;
-import com.ada.proj.dto.PageResponse;
-import com.ada.proj.dto.PointsBalanceResponse;
-import com.ada.proj.dto.PointsDeductRequest;
-import com.ada.proj.dto.PointsGrantRequest;
-import com.ada.proj.dto.PointsTransactionResponse;
-import com.ada.proj.dto.PointsUseRequest;
 import com.ada.proj.entity.UserPoints;
 import com.ada.proj.service.PointsService;
 
@@ -51,28 +45,17 @@ public class PointsController {
         return getBalance(userUuid, auth);
     }
 
-    // 포인트 지급: 로그인 사용자 본인 UUID 자동 사용
     @PostMapping("/adjustments")
-    @Operation(summary = "포인트 지급(지정 사용자)", description = "요청 본문으로 전달된 userUuid에 대해 포인트를 지급합니다. ADMIN 권한 불필요.")
-    public ApiResponse<PointsTransactionResponse> grant(@Valid @RequestBody PointsGrantRequest req) {
-        UserPoints tx = pointsService.grantPoints(req.getUserUuid(), req.getPoints(), req.getDescription(), req.getRefRuleId());
-        return ApiResponse.success(PointsTransactionResponse.from(tx));
-    }
-
-    // 포인트 차감: 로그인 사용자 본인 UUID 자동 사용
-    @PostMapping("/adjustments")
-    @Operation(summary = "포인트 차감(지정 사용자)", description = "요청 본문으로 전달된 userUuid에 대해 포인트를 차감합니다. ADMIN 권한 불필요.")
-    public ApiResponse<PointsTransactionResponse> deduct(@Valid @RequestBody PointsDeductRequest req) {
-        UserPoints tx = pointsService.deductPoints(req.getUserUuid(), req.getPoints(), req.getDescription(), req.getRefRuleId());
-        return ApiResponse.success(PointsTransactionResponse.from(tx));
-    }
-
-    // 포인트 사용: 본인 전용
-    @PostMapping("/adjustments")
-    @Operation(summary = "포인트 사용", description = "본인 또는 ADMIN 대행으로 포인트를 사용 처리합니다. 본문에 대상 사용자 UUID를 명시합니다.")
-    public ApiResponse<PointsTransactionResponse> use(@Valid @RequestBody PointsUseRequest req, Authentication auth) {
-        ensureSelfOrAdmin(auth, req.getUserUuid()); // 관리자 대행 사용 허용
-        UserPoints tx = pointsService.usePoints(req.getUserUuid(), req.getPoints(), req.getUsedFor(), req.getMetadata(), req.getDescription());
+    @Operation(summary = "포인트 조정", description = "type에 따라 포인트를 지급(GAIN), 차감(LOSS), 사용(USE) 합니다.")
+    public ApiResponse<PointsTransactionResponse> adjust(
+            @Valid @RequestBody PointsAdjustRequest req,
+            Authentication auth) {
+        UserPoints tx = switch (req.getType()) {
+            case GAIN -> pointsService.grantPoints(req.getUserUuid(), req.getPoints(), req.getDescription(), req.getRefRuleId());
+            case LOSS -> pointsService.deductPoints(req.getUserUuid(), req.getPoints(), req.getDescription(), req.getRefRuleId());
+            case USE -> pointsService.usePoints(req.getUserUuid(), req.getPoints(), req.getUsedFor(), req.getMetadata(), req.getDescription());
+            default -> throw new IllegalArgumentException("지원하지 않는 type입니다: " + req.getType());
+        };
         return ApiResponse.success(PointsTransactionResponse.from(tx));
     }
 

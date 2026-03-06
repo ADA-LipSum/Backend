@@ -128,7 +128,7 @@ public class PostController {
         return ResponseEntity.ok(ApiResponse.success());
     }
 
-    @GetMapping("/{postUuid}/comments")
+    @GetMapping("/{uuid}/comments")
     @Operation(summary = "게시글 댓글 조회", description = "게시글의 댓글 및 대댓글 출력")
     public ResponseEntity<ApiResponse<java.util.List<CommentResponse>>> comments(
             @Parameter(description = "게시글 UUID") @PathVariable("postUuid") String postUuid) {

@@ -48,17 +48,15 @@ public class TradeController {
         return ApiResponse.success(TradeItemResponse.from(item));
     }
 
-    @GetMapping("/items/detail")
+    @GetMapping("/items/{itemId}")
     @Operation(
             summary = "아이템 상세 조회",
-            description = "QueryString으로 itemUuid를 받아 아이템 상세 정보를 조회합니다.\n\n"
-                    + "파라미터 설명:\n"
-                    + "- itemUuid: 조회할 아이템 UUID"
+            description = "PathVariable로 itemId(UUID)를 받아 아이템 상세 정보를 조회합니다."
     )
     public ApiResponse<TradeItemResponse> getItem(
-            @RequestParam String itemUuid
+            @Parameter(description = "조회할 아이템 UUID") @PathVariable("itemId") String itemId
     ) {
-        TradeItem item = tradeService.getItemDetail(itemUuid);
+        TradeItem item = tradeService.getItemDetail(itemId);
         return ApiResponse.success(TradeItemResponse.from(item));
     }
 
@@ -194,29 +192,23 @@ public class TradeController {
         }
     }
 
-    @DeleteMapping("/items/{uuid}")
+    @DeleteMapping("/items/{itemId}")
     @PreAuthorize("hasAnyRole('ADMIN','TEACHER')")
     @Operation(
             summary = "거래 아이템 삭제",
             description = """
-                    선택한 거래 아이템을 삭제(비활성화)합니다.
+                선택한 거래 아이템을 삭제(비활성화)합니다.
 
-                    - 실제 DB 행을 제거하지 않고 active 플래그만 false 로 내려,
-                      과거 거래 내역과 포인트 이력을 안전하게 보존합니다.
-
-                    요청 필드 설명:
-                    - itemUuid: 삭제할 아이템의 UUID (예: "item-uuid-12345678-90ab-cdef-1234-567890abcdef")
-                    """,
+                - 실제 DB 행을 제거하지 않고 active 플래그만 false 로 내려,
+                  과거 거래 내역과 포인트 이력을 안전하게 보존합니다.
+                """,
             security = @SecurityRequirement(name = "bearerAuth")
     )
     public ApiResponse<Void> deleteItem(
-            @Parameter(
-                    description = "삭제할 아이템 UUID",
-                    example = "item-uuid-12345678-90ab-cdef-1234-567890abcdef"
-            )
-            @RequestParam String itemUuid
+            @Parameter(description = "삭제할 아이템 UUID", example = "item-uuid-12345678-90ab-cdef-1234-567890abcdef")
+            @PathVariable("itemId") String itemId
     ) {
-        tradeService.deleteItem(itemUuid);
+        tradeService.deleteItem(itemId);
         return ApiResponse.success();
     }
 

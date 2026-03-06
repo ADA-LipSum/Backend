@@ -100,18 +100,6 @@ public class BanController {
     }
 
     @Operation(
-            summary = "내 제재 현황",
-            description = "로그인한 사용자가 본인에게 적용된 활성 제재 정보를 확인합니다. 제재 중이 아니면 204를 반환합니다.")
-    @GetMapping("/me/ban")
-    public ResponseEntity<BanInfoResponse> getMyBanInfo() {
-        BanInfoResponse info = banService.getMyActiveBan();
-        if (info == null) {
-            return ResponseEntity.noContent().build();
-        }
-        return ResponseEntity.ok(info);
-    }
-
-    @Operation(
             summary = "특정 유저 제재 내역",
             description = "특정 유저의 제재 내역을 조회합니다. activeOnly=true이면 현재 진행 중인 제재만 반환합니다.")
     @GetMapping("/bans/users/{userUuid}")

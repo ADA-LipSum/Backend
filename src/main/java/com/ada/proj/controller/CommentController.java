@@ -33,22 +33,30 @@ public class CommentController {
      * 댓글 작성
      */
     @PreAuthorize("isAuthenticated()")
-    @PostMapping
+    @PostMapping("/posts/{postUuid}/comments")
     @Operation(
             summary = "댓글 작성",
             description = "게시물에 댓글을 작성합니다. parentId가 존재하면 대댓글로 등록됩니다."
     )
     public ResponseEntity<ApiResponse<CommentResponse>> createComment(
+            @Parameter(description = "게시글 UUID") @PathVariable("postId") String postId,
             @RequestBody @Valid CommentCreateRequest request
     ) {
         CommentCreateRequest payload = Objects.requireNonNull(request, "request");
+        payload.setPostId(postId); // PathVariable로 덮어쓰기
         return ResponseEntity.ok(ApiResponse.success(commentService.createComment(payload)));
     }
 
     /**
      * 댓글 목록 조회
      */
-
+    @GetMapping("/posts/{postUuid}/comments")
+    @Operation(summary = "댓글 목록 조회", description = "게시글의 댓글 및 대댓글 출력")
+    public ResponseEntity<ApiResponse<List<CommentResponse>>> getComments(
+            @Parameter(description = "게시글 UUID") @PathVariable("postId") String postId
+    ) {
+        return ResponseEntity.ok(ApiResponse.success(commentService.getCommentsByPost(postId)));
+    }
 
     /**
      * 댓글 수정

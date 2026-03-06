@@ -80,14 +80,6 @@ public class AuthController {
                 .body(ApiResponse.ok(body));
     }
 
-    @GetMapping("/me")
-    @Operation(summary = "내 정보 조회", security = @SecurityRequirement(name = "bearerAuth"))
-    public ResponseEntity<ApiResponse<AuthMeResponse>> me(Authentication authentication) {
-
-        AuthMeResponse res = authService.me(authentication);
-        return ResponseEntity.ok(ApiResponse.ok(res));
-    }
-
     @PostMapping("/reissue")
     @Operation(summary = "토큰 재발급")
     public ResponseEntity<ApiResponse<AuthTokenResponse>> reissue(
