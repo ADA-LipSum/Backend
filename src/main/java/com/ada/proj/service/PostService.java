@@ -48,11 +48,6 @@ public class PostService {
                 .orElseThrow(() -> new EntityNotFoundException("Post not found: " + uuid));
     }
 
-    private Post getPostBySeqOrThrow(@NonNull Long seq) {
-        return postRepository.findBySeq(seq)
-                .orElseThrow(() -> new EntityNotFoundException("Post not found (seq): " + seq));
-    }
-
     private boolean hasAdminRole(Authentication auth) {
         if (auth == null || auth.getAuthorities() == null) {
             return false;
@@ -176,13 +171,6 @@ public class PostService {
                 .build();
     }
 
-    // seq 기반 상세 조회 (uuid 기반 상세 재사용)
-    @Transactional
-    public PostDetailResponse detailBySeq(@NonNull Long seq) {
-        Post p = getPostBySeqOrThrow(seq);
-        return detail(requirePostUuid(p));
-    }
-
     // 수정
     @Transactional
     public void update(@NonNull String uuid, @NonNull PostUpdateRequest req, Authentication auth) {
@@ -209,13 +197,6 @@ public class PostService {
         }
     }
 
-    // seq 기반 수정
-    @Transactional
-    public void updateBySeq(@NonNull Long seq, @NonNull PostUpdateRequest req, Authentication auth) {
-        Post p = getPostBySeqOrThrow(seq);
-        update(requirePostUuid(p), req, auth);
-    }
-
     // 삭제
     @Transactional
     public void delete(@NonNull String uuid, Authentication auth) {
@@ -225,13 +206,6 @@ public class PostService {
         Post p = getPostByUuidOrThrow(uuid);
         ensureWriterOrAdmin(p, auth);
         postRepository.deleteById(uuid);
-    }
-
-    // seq 기반 삭제
-    @Transactional
-    public void deleteBySeq(@NonNull Long seq, Authentication auth) {
-        Post p = getPostBySeqOrThrow(seq);
-        delete(requirePostUuid(p), auth);
     }
 
     @Transactional
@@ -257,13 +231,6 @@ public class PostService {
             return true; // 좋아요 눌림
         }
 
-    }
-
-    // seq 기반 좋아요 토글
-    @Transactional
-    public boolean toggleLikeBySeq(@NonNull String userUuid, @NonNull Long seq) {
-        Post p = getPostBySeqOrThrow(seq);
-        return toggleLike(userUuid, requirePostUuid(p));
     }
 
     // 좋아요 id로 취소(또는 검사) 처리

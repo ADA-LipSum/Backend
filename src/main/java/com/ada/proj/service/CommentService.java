@@ -165,65 +165,88 @@ public class CommentService {
         log.info("[COMMENT-DELETE] postUuid={}, deletedCommentId={}", post.getPostUuid(), commentId);
     }
 
-    /** 댓글 좋아요 토글 */
+    /** 좋아요 **/
     @Transactional
-    public Map<String, Object> toggleLike(@NonNull Long commentId) {
-
+    public Map<String, Object> addLike(@NonNull Long commentId) {
         User currentUser = getCurrentUser();
-
         Comment comment = commentRepository.findById(commentId)
                 .orElseThrow(() -> new IllegalArgumentException("댓글을 찾을 수 없습니다."));
 
-        Optional<CommentLike> existing =
-                commentLikeRepository.findByCommentAndUser(comment, currentUser);
-
-        boolean liked;
-
-        if (existing.isPresent()) {
-            commentLikeRepository.delete(Objects.requireNonNull(existing.get()));
-            comment.setLikes(comment.getLikes() - 1);
-            liked = false;
-        } else {
-                CommentLike like = CommentLike.builder()
-                    .comment(comment)
-                    .user(currentUser)
-                    .build();
-                commentLikeRepository.save(Objects.requireNonNull(like));
-            comment.setLikes(comment.getLikes() + 1);
-            liked = true;
+        if (commentLikeRepository.findByCommentAndUser(comment, currentUser).isPresent()) {
+            throw new IllegalStateException("이미 좋아요한 댓글입니다.");
         }
 
+        CommentLike like = CommentLike.builder()
+                .comment(comment)
+                .user(currentUser)
+                .build();
+        commentLikeRepository.save(Objects.requireNonNull(like));
+        comment.setLikes(comment.getLikes() + 1);
         commentRepository.save(comment);
 
         Map<String, Object> result = new HashMap<>();
-        result.put("liked", liked);
+        result.put("liked", true);
         result.put("likes", comment.getLikes());
-
         return result;
     }
 
-    /** 댓글 고정 토글 */
+    /**좋아요 삭제**/
     @Transactional
-    public Map<String, Object> toggleFixed(@NonNull Long commentId) {
-
+    public Map<String, Object> removeLike(@NonNull Long commentId) {
         User currentUser = getCurrentUser();
-
         Comment comment = commentRepository.findById(commentId)
                 .orElseThrow(() -> new IllegalArgumentException("댓글을 찾을 수 없습니다."));
 
-        if (!comment.getPost().getWriterUuid().equals(currentUser.getUuid())) {
-            throw new AccessDeniedException("게시글 작성자만 가능");
-        }
+        CommentLike existing = commentLikeRepository.findByCommentAndUser(comment, currentUser)
+                .orElseThrow(() -> new IllegalStateException("좋아요하지 않은 댓글입니다."));
 
-        boolean newState = !comment.isFixed();
-        comment.setFixed(newState);
-
+        commentLikeRepository.delete(existing);
+        comment.setLikes(comment.getLikes() - 1);
         commentRepository.save(comment);
 
         Map<String, Object> result = new HashMap<>();
-        result.put("fixed", newState);
-        result.put("commentId", comment.getId());
+        result.put("liked", false);
+        result.put("likes", comment.getLikes());
+        return result;
+    }
 
+    /** 댓글 고정**/
+    @Transactional
+    public Map<String, Object> pinComment(@NonNull Long commentId) {
+        User currentUser = getCurrentUser();
+        Comment comment = commentRepository.findById(commentId)
+                .orElseThrow(() -> new IllegalArgumentException("댓글을 찾을 수 없습니다."));
+        if (!comment.getPost().getWriterUuid().equals(currentUser.getUuid())) {
+            throw new AccessDeniedException("게시글 작성자만 가능");
+        }
+        if (comment.isFixed()) {
+            throw new IllegalStateException("이미 고정된 댓글입니다.");
+        }
+        comment.setFixed(true);
+        commentRepository.save(comment);
+        Map<String, Object> result = new HashMap<>();
+        result.put("fixed", true);
+        result.put("commentId", comment.getId());
+        return result;
+    }
+
+    /**댓글 고정 해제**/
+    @Transactional
+    public Map<String, Object> unpinComment(@NonNull Long commentId) {
+        User currentUser = getCurrentUser();
+        Comment comment = commentRepository.findById(commentId)
+                .orElseThrow(() -> new IllegalArgumentException("댓글을 찾을 수 없습니다."));
+        if (!comment.getPost().getWriterUuid().equals(currentUser.getUuid())) {
+            throw new AccessDeniedException("게시글 작성자만 가능");
+        }
+        if (!comment.isFixed()) {
+            throw new IllegalStateException("고정되지 않은 댓글입니다.");
+        }
+        comment.setFixed(false);
+        commentRepository.save(comment);
+        Map<String, Object> result = new HashMap<>();
+        result.put("fixed", false);
+        result.put("commentId", comment.getId());
         return result;
     }
 

@@ -52,7 +52,7 @@ public class PointsController {
     }
 
     // 포인트 지급: 로그인 사용자 본인 UUID 자동 사용
-    @PostMapping("/grant")
+    @PostMapping("/adjustments")
     @Operation(summary = "포인트 지급(지정 사용자)", description = "요청 본문으로 전달된 userUuid에 대해 포인트를 지급합니다. ADMIN 권한 불필요.")
     public ApiResponse<PointsTransactionResponse> grant(@Valid @RequestBody PointsGrantRequest req) {
         UserPoints tx = pointsService.grantPoints(req.getUserUuid(), req.getPoints(), req.getDescription(), req.getRefRuleId());
@@ -60,7 +60,7 @@ public class PointsController {
     }
 
     // 포인트 차감: 로그인 사용자 본인 UUID 자동 사용
-    @PostMapping("/deduct")
+    @PostMapping("/adjustments")
     @Operation(summary = "포인트 차감(지정 사용자)", description = "요청 본문으로 전달된 userUuid에 대해 포인트를 차감합니다. ADMIN 권한 불필요.")
     public ApiResponse<PointsTransactionResponse> deduct(@Valid @RequestBody PointsDeductRequest req) {
         UserPoints tx = pointsService.deductPoints(req.getUserUuid(), req.getPoints(), req.getDescription(), req.getRefRuleId());
@@ -68,7 +68,7 @@ public class PointsController {
     }
 
     // 포인트 사용: 본인 전용
-    @PostMapping("/use")
+    @PostMapping("/adjustments")
     @Operation(summary = "포인트 사용", description = "본인 또는 ADMIN 대행으로 포인트를 사용 처리합니다. 본문에 대상 사용자 UUID를 명시합니다.")
     public ApiResponse<PointsTransactionResponse> use(@Valid @RequestBody PointsUseRequest req, Authentication auth) {
         ensureSelfOrAdmin(auth, req.getUserUuid()); // 관리자 대행 사용 허용

@@ -103,7 +103,7 @@ public class TradeController {
         );
     }
 
-    @PostMapping("/purchase")
+    @PostMapping("/transactions")
     @Operation(
             summary = "물품 거래(구매)",
             description = "로그인 사용자가 포인트로 물품을 구매합니다. 포인트 부족 시 실패합니다.\n\n"
@@ -123,26 +123,7 @@ public class TradeController {
         );
     }
 
-    @PostMapping("/logs")
-    @Operation(
-            summary = "거래 로그 저장",
-            description = "거래 로그를 별도로 저장합니다(수동 기록). 포인트 트랜잭션과 연결할 수 있습니다.\n\n"
-                    + "요청 필드 설명:\n"
-                    + "- itemUuid: 아이템 UUID.\n"
-                    + "- quantity: 수량(최소 1).\n"
-                    + "- totalPoints: 총 포인트(옵션, 미전달 시 단가*수량).\n"
-                    + "- itemName: 아이템 이름(옵션, 기본 DB값 사용).\n"
-                    + "- pointsUuid: 연결할 포인트 트랜잭션 UUID(옵션).\n"
-                    + "- metadata: 추가 메타데이터(JSON 문자열)."
-    )
-    public ApiResponse<String> createLog(@Valid @RequestBody TradeLogCreateRequest req, Authentication auth) {
-        if (auth == null) throw new SecurityException("Unauthenticated");
-        String userUuid = auth.getName();
-        TradeLog log = tradeService.createLog(userUuid, req);
-        return ApiResponse.success(log.getLogUuid());
-    }
-
-    @GetMapping("/my/logs")
+    @GetMapping("/logstrancsactions/me")
     @Operation(
             summary = "내 구매내역 조회",
             description = "QueryString으로 page/size를 받아 자신의 구매내역을 조회합니다.\n\n"
@@ -172,7 +153,7 @@ public class TradeController {
         );
     }
 
-    @GetMapping("/users/logs")
+    @GetMapping("/transactions")
     @Operation(
             summary = "사용자 구매내역 조회",
             description = "QueryString으로 userUuid/page/size를 받아 특정 사용자의 구매 내역을 조회합니다.\n"
@@ -213,7 +194,7 @@ public class TradeController {
         }
     }
 
-    @DeleteMapping("/items/delete")
+    @DeleteMapping("/items/{uuid}")
     @PreAuthorize("hasAnyRole('ADMIN','TEACHER')")
     @Operation(
             summary = "거래 아이템 삭제",
@@ -239,7 +220,7 @@ public class TradeController {
         return ApiResponse.success();
     }
 
-    @PostMapping("/restock")
+    @PostMapping("/items/{uuid}stock")
     @Operation(summary = "재고 충전", description = "ADMIN 또는 TEACHER만 재고를 충전할 수 있습니다.")
     public ApiResponse<Void> restock(
             @RequestBody RestockRequest req,

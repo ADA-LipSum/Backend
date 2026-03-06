@@ -18,7 +18,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
 @RestController
-@RequestMapping
+@RequestMapping("/api")
 @Tag(name = "권한 관리", description = "역할 목록 및 역할별 사용자 조회 API")
 public class RoleController {
 

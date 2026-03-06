@@ -39,7 +39,7 @@ public class PostController {
     private final PostService postService;
     private final com.ada.proj.service.CommentService commentService; // 댓글 조회 REST 경로 제공
 
-    @PostMapping(path = {"", "/"})
+    @PostMapping
     @Operation(
             summary = "게시물 생성",
             description = "JSON body로 게시물을 생성합니다.",
@@ -70,18 +70,6 @@ public class PostController {
         return ResponseEntity.ok(ApiResponse.success());
     }
 
-    // seq 기반 수정
-    @PutMapping("/seq/{seq}")
-    @Operation(summary = "게시글 수정 (seq)", description = "seq로 게시글 수정", security = @SecurityRequirement(name = "bearerAuth"))
-    public ResponseEntity<ApiResponse<Void>> updateBySeq(
-            @Parameter(description = "게시글 seq", example = "123")
-            @PathVariable("seq") Long seq,
-            @RequestBody PostUpdateRequest req,
-            Authentication authentication) {
-        postService.updateBySeq(requireSeq(seq), requireUpdateRequest(req), authentication);
-        return ResponseEntity.ok(ApiResponse.success());
-    }
-
     @DeleteMapping("/{uuid}")
     @Operation(summary = "게시글 삭제", description = "선택한 게시글을 삭제", security = @SecurityRequirement(name = "bearerAuth"))
     public ResponseEntity<ApiResponse<Void>> delete(
@@ -92,32 +80,12 @@ public class PostController {
         return ResponseEntity.ok(ApiResponse.success());
     }
 
-    // seq 기반 삭제
-    @DeleteMapping("/seq/{seq}")
-    @Operation(summary = "게시글 삭제 (seq)", description = "seq로 게시글 삭제", security = @SecurityRequirement(name = "bearerAuth"))
-    public ResponseEntity<ApiResponse<Void>> deleteBySeq(
-            @Parameter(description = "게시글 seq", example = "123")
-            @PathVariable("seq") Long seq,
-            Authentication authentication) {
-        postService.deleteBySeq(requireSeq(seq), authentication);
-        return ResponseEntity.ok(ApiResponse.success());
-    }
-
     @GetMapping("/{uuid}")
     @Operation(summary = "게시글 상세 조회", description = "게시글 상세 정보를 조회하고 조회수 증가")
     public ResponseEntity<ApiResponse<PostDetailResponse>> detail(
             @Parameter(description = "게시글 UUID", example = "post-uuid-...")
             @PathVariable("uuid") String uuid) {
         return ResponseEntity.ok(ApiResponse.success(postService.detail(requireUuid(uuid))));
-    }
-
-    // seq 기반 상세 조회
-    @GetMapping("/seq/{seq}")
-    @Operation(summary = "게시글 상세 조회 (seq)", description = "seq로 게시글 상세 조회 및 조회수 증가")
-    public ResponseEntity<ApiResponse<PostDetailResponse>> detailBySeq(
-            @Parameter(description = "게시글 seq", example = "123")
-            @PathVariable("seq") Long seq) {
-        return ResponseEntity.ok(ApiResponse.success(postService.detailBySeq(requireSeq(seq))));
     }
 
     @GetMapping
@@ -145,21 +113,6 @@ public class PostController {
         return ResponseEntity.ok(ApiResponse.success(liked));
     }
 
-    @PostMapping("/seq/{seq}/like")
-    @Operation(summary = "게시글 좋아요 토글 (seq)", description = "seq로 좋아요 토글", security = @SecurityRequirement(name = "bearerAuth"))
-    public ResponseEntity<ApiResponse<Boolean>> toggleLikeBySeq(
-            @Parameter(description = "게시글 seq", example = "123")
-            @PathVariable("seq") Long seq,
-            Authentication auth
-    ) {
-        if (auth == null) {
-            throw new SecurityException("로그인이 필요합니다.");
-        }
-        String principal = Objects.requireNonNull(auth.getName(), "principal");
-        boolean liked = postService.toggleLikeBySeq(principal, requireSeq(seq));
-        return ResponseEntity.ok(ApiResponse.success(liked));
-    }
-
     @DeleteMapping("/likes/{id}")
     @Operation(summary = "좋아요 삭제 (id)", description = "좋아요 id로 좋아요 삭제", security = @SecurityRequirement(name = "bearerAuth"))
     public ResponseEntity<ApiResponse<Void>> deleteLikeById(
@@ -175,30 +128,16 @@ public class PostController {
         return ResponseEntity.ok(ApiResponse.success());
     }
 
-    @GetMapping("/{uuid}/comments")
-    @Operation(summary = "게시글 댓글 조회", description = "게시글의 최상위 및 대댓글 포함 전체 댓글 반환")
+    @GetMapping("/{postUuid}/comments")
+    @Operation(summary = "게시글 댓글 조회", description = "게시글의 댓글 및 대댓글 출력")
     public ResponseEntity<ApiResponse<java.util.List<CommentResponse>>> comments(
-            @PathVariable("uuid") String uuid) {
-        return ResponseEntity.ok(ApiResponse.success(commentService.getCommentsByPost(requireUuid(uuid))));
-    }
-
-    // seq 기반 댓글 조회
-    @GetMapping("/seq/{seq}/comments")
-    @Operation(summary = "게시글 댓글 조회 (seq)", description = "seq로 게시글의 댓글 전체 조회")
-    public ResponseEntity<ApiResponse<java.util.List<CommentResponse>>> commentsBySeq(
-            @PathVariable("seq") Long seq) {
-        PostDetailResponse pd = postService.detailBySeq(requireSeq(seq));
-        return ResponseEntity.ok(ApiResponse.success(commentService.getCommentsByPost(requireUuid(pd.getPostUuid()))));
+            @Parameter(description = "게시글 UUID") @PathVariable("postUuid") String postUuid) {
+        return ResponseEntity.ok(ApiResponse.success(commentService.getCommentsByPost(requireUuid(postUuid))));
     }
 
     private @NonNull
     String requireUuid(String uuid) {
         return Objects.requireNonNull(uuid, "uuid");
-    }
-
-    private @NonNull
-    Long requireSeq(Long seq) {
-        return Objects.requireNonNull(seq, "seq");
     }
 
     private @NonNull

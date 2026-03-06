@@ -79,11 +79,13 @@ public class StudyGroupController {
         return ResponseEntity.ok(ApiResponse.success());
     }
 
-    @PostMapping("/groups/{uuid}/delegate-leader")
+    @PatchMapping("/groups/{uuid}")
     @Operation(summary = "리더 위임", security = @SecurityRequirement(name = "bearerAuth"))
     public ResponseEntity<ApiResponse<Void>> delegateLeader(@PathVariable("uuid") String uuid,
-            @Valid @RequestBody StudyMemberManageRequest req) {
-        studyGroupService.delegateLeader(java.util.Objects.requireNonNull(uuid), java.util.Objects.requireNonNull(req));
+                                                            @Valid @RequestBody DelegateLeaderRequest req) {
+        StudyMemberManageRequest manageReq = new StudyMemberManageRequest();
+        manageReq.setUserUuid(req.getLeaderUserUuid());
+        studyGroupService.delegateLeader(java.util.Objects.requireNonNull(uuid), java.util.Objects.requireNonNull(manageReq));
         return ResponseEntity.ok(ApiResponse.success());
     }
 

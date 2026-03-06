@@ -34,7 +34,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/report")
+@RequestMapping("/api/reports")
 @RequiredArgsConstructor
 @Tag(name = "신고 관리", description = "유저 신고 생성 및 목록 조회 API")
 @SecurityRequirement(name = "bearerAuth")
@@ -97,7 +97,7 @@ public class ReportController {
         @ApiResponse(responseCode = "403", description = "권한 없음", content = @Content)
     })
     @PreAuthorize("hasAnyRole('ADMIN','TEACHER')")
-    @PatchMapping("/{reportId}/status")
+    @PatchMapping("/{reportId}")
     public ReportResponse updateReportStatus(
             @PathVariable Long reportId,
             @Valid @RequestBody ReportStatusUpdateRequest request

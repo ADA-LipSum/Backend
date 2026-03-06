@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping
+@RequestMapping("/api")
 @Tag(name = "회원/프로필", description = "회원 정보, 프로필, 커스텀 로그인 등을 관리하는 API")
 public class UserController {
 

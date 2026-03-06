@@ -73,14 +73,14 @@ public class SecurityConfig {
                 ).permitAll()
                 .requestMatchers(HttpMethod.GET, "/auth/status").permitAll()
                 .requestMatchers(HttpMethod.POST,
-                        "/auth/login",
-                        "/auth/reissue",
-                        "/auth/signup/teacher",
-                        "/auth/admin/init"
+                        "/api/auth/login",
+                        "/api/auth/reissue",
+                        "/api/auth/signup/teacher",
+                        "/api/auth/admin/init"
                 ).permitAll()
                 .requestMatchers(HttpMethod.POST,
-                        "/auth/admin/create",
-                        "/auth/logout/all"
+                        "/api/auth/admin/create",
+                        "/api/auth/logout/all"
                 ).hasRole("ADMIN")
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                 .requestMatchers(
@@ -88,10 +88,10 @@ public class SecurityConfig {
                         "/api/trade/items/search"
                 ).permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/studies/**").permitAll()
-                .requestMatchers(HttpMethod.GET, "/users").permitAll()
-                .requestMatchers(HttpMethod.GET, "/users/*").permitAll()
-                .requestMatchers(HttpMethod.GET, "/roles", "/roles/*").permitAll()
-                .requestMatchers("/users/*/role").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.GET, "/api/users").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/users/*").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/roles", "/api/roles/*").permitAll()
+                .requestMatchers("/api/users/*/role").hasRole("ADMIN")
                 .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
