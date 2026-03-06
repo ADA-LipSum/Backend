@@ -181,7 +181,7 @@ public class UserService {
                 .profileBanner(req.getProfileBanner())
                 .build();
 
-        forceApplyIdenticonProfileImage(user);
+        applyDefaultIdenticonProfileImageIfMissing(user);
         user = userRepository.save(Objects.requireNonNull(user));
 
         if (req.getIntro() != null || req.getTechStack() != null) {

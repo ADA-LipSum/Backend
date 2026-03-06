@@ -1,5 +1,6 @@
 package com.ada.proj.controller;
 
+import com.ada.proj.dto.*;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
@@ -11,15 +12,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.ada.proj.dto.ApiResponse;
-import com.ada.proj.dto.AuthMeResponse;
-import com.ada.proj.dto.AuthTokenResponse;
-import com.ada.proj.dto.CreateUserRequest;
-import com.ada.proj.dto.CreateUserResponse;
-import com.ada.proj.dto.LoginRequest;
-import com.ada.proj.dto.LoginResponse;
-import com.ada.proj.dto.TeacherSignupRequest;
-import com.ada.proj.dto.TokenReissueRequest;
 import com.ada.proj.entity.RefreshToken;
 import com.ada.proj.exception.UnauthenticatedException;
 import com.ada.proj.repository.RefreshTokenRepository;
@@ -246,10 +238,16 @@ public class AuthController {
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "관리자: 사용자 생성", security = @SecurityRequirement(name = "bearerAuth"))
     public ResponseEntity<ApiResponse<CreateUserResponse>> createUserByAdmin(
-            @Valid @RequestBody CreateUserRequest req,
+            @Valid @RequestBody AdminCreateUserRequest req,
             Authentication authentication) {
 
-        var user = userService.createUserByAdmin(req, authentication);
+        CreateUserRequest createReq = new CreateUserRequest();
+        createReq.setAdminId(req.getAdminId());
+        createReq.setUserRealname(req.getUserRealname());
+        createReq.setRole(req.getRole());
+        createReq.setPassword(req.getPassword());
+
+        var user = userService.createUserByAdmin(createReq, authentication);
         CreateUserResponse res = new CreateUserResponse(
                 user.getUuid(),
                 user.getAdminId(),
